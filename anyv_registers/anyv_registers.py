@@ -243,6 +243,15 @@ SOFTWARE.""")
                   field['bitOffset'] = field_bitOffset
                   previous_field_bitWidth = field['bitWidth']
 
+    # Compute the size
+    for memoryMap in descriptor['component']['memoryMaps']:
+      if 'addressBlocks' in memoryMap:
+        for addressBlock in memoryMap['addressBlocks']:
+          if 'registers' in addressBlock:
+            for register in addressBlock['registers']:
+              if 'size' in register:
+                register['width'] = register['size']
+
     return descriptor
 
   # Command line arguments
