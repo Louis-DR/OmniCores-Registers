@@ -80,6 +80,94 @@ SOFTWARE.""")
         throw_error(f"Exception occurred while loading '{xml_file_path}' : \n  {type(exc).__name__}\n{intend_text(exc)}")
     return component_descriptor
 
+  # Postprocess the IPXACT register bank descriptor to facilitate its use in the templates
+  def postprocess_ipxact(descriptor):
+
+    # Fold the memoryMap list
+    memoryMaps = []
+    if isinstance(descriptor['component']['memoryMaps'], dict):
+      memoryMaps = [descriptor['component']['memoryMaps']['memoryMap']]
+    elif isinstance(descriptor['component']['memoryMaps'], list):
+      memoryMaps = descriptor['component']['memoryMaps']
+    else: raise Exception()
+    descriptor['component']['memoryMaps'] = memoryMaps
+
+    for memoryMap in descriptor['component']['memoryMaps']:
+
+      # Fold the addressBlock list
+      addressBlocks = []
+      if isinstance(memoryMap['addressBlock'], dict):
+        addressBlocks = [memoryMap['addressBlock']]
+      elif isinstance(memoryMap['addressBlock'], list):
+        addressBlocks = memoryMap['addressBlock']
+      else: raise Exception()
+      memoryMap['addressBlocks'] = addressBlocks
+      del memoryMap['addressBlock']
+
+      for addressBlock in memoryMap['addressBlocks']:
+
+        # Fold the accessPolicy list
+        accessPolicies = []
+        if isinstance(addressBlock['accessPolicies'], dict):
+          accessPolicies = [addressBlock['accessPolicies']['accessPolicy']]
+        elif isinstance(addressBlock['accessPolicies'], list):
+          accessPolicies = addressBlock['accessPolicies']
+        else: raise Exception()
+        addressBlock['accessPolicies'] = accessPolicies
+
+        # Fold the register list
+        registers = []
+        if isinstance(addressBlock['register'], dict):
+          registers = [addressBlock['register']]
+        elif isinstance(addressBlock['register'], list):
+          registers = addressBlock['register']
+        else: raise Exception()
+        addressBlock['registers'] = registers
+        del addressBlock['register']
+
+        for register in addressBlock['registers']:
+
+          # Fold the field list
+          fields = []
+          if isinstance(register['field'], dict):
+            fields = [register['field']]
+          elif isinstance(register['field'], list):
+            fields = register['field']
+          else: raise Exception()
+          register['fields'] = fields
+          del register['field']
+
+          for field in register['fields']:
+
+            # Fold the reset list
+            resets = []
+            if isinstance(field['resets'], dict):
+              resets = [field['resets']['reset']]
+            elif isinstance(field['resets'], list):
+              resets = field['resets']
+            else: raise Exception()
+            field['resets'] = resets
+
+            # Fold the fieldAccessPolicy list
+            fieldAccessPolicies = []
+            if isinstance(field['fieldAccessPolicies'], dict):
+              fieldAccessPolicies = [field['fieldAccessPolicies']['fieldAccessPolicy']]
+            elif isinstance(field['fieldAccessPolicies'], list):
+              fieldAccessPolicies = field['fieldAccessPolicies']
+            else: raise Exception()
+            field['fieldAccessPolicies'] = fieldAccessPolicies
+
+            # Fold the enumeratedValue list
+            enumeratedValues = []
+            if isinstance(field['enumeratedValues'], dict):
+              enumeratedValues = [field['enumeratedValues']['enumeratedValue']]
+            elif isinstance(field['enumeratedValues'], list):
+              enumeratedValues = field['enumeratedValues']
+            else: raise Exception()
+            field['enumeratedValues'] = enumeratedValues
+
+    return descriptor
+
   # Command line arguments
   argparser = argparse.ArgumentParser()
   argparser.add_argument("descriptor",                help="Register map descriptor",        nargs=1)
@@ -99,6 +187,8 @@ SOFTWARE.""")
   # Load the register bank descriptor
   component_descriptor = load_xml(args.descriptor[0])
   component_name = component_descriptor['component']['name']
+  pprint.pprint(component_descriptor)
+  component_descriptor = postprocess_ipxact(component_descriptor)
   pprint.pprint(component_descriptor)
 
   # Overload the join_path function such that the include statements are relative to the template
