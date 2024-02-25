@@ -1,0 +1,11 @@
+
+{% filter align %}
+// Registers
+{% for register in component.memoryMaps.memoryMap.addressBlock.register %}
+{{register.name}}
+{{register.addressOffset}}
+{{register.size}}
+{% endfor %}
+
+
+{% endfilter %}

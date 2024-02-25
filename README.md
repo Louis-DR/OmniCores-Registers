@@ -1,2 +1,1 @@
-# AnyV-Registers
-Template-based hardware register bank generator
+# AnyV-Registers - Hardware register bank generator
