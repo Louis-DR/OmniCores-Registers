@@ -66,6 +66,9 @@ SOFTWARE.""")
     # Prepare bool for auto-cast
     if value == "true":  value = "True"
     if value == "false": value = "False"
+    # Prepare IPXACT hexadecimal values
+    if isinstance(value,str) and value.startswith("'h"):
+      value = f"0x{value[2:]}"
     # Auto-cast value
     value = auto_cast_str(value)
     return key, value
