@@ -128,43 +128,47 @@ SOFTWARE.""")
         for register in addressBlock['registers']:
 
           # Fold the field list
-          fields = []
-          if isinstance(register['field'], dict):
-            fields = [register['field']]
-          elif isinstance(register['field'], list):
-            fields = register['field']
-          else: raise Exception()
-          register['fields'] = fields
-          del register['field']
-
-          for field in register['fields']:
-
-            # Fold the reset list
-            resets = []
-            if isinstance(field['resets'], dict):
-              resets = [field['resets']['reset']]
-            elif isinstance(field['resets'], list):
-              resets = field['resets']
+          if 'field' in register:
+            fields = []
+            if isinstance(register['field'], dict):
+              fields = [register['field']]
+            elif isinstance(register['field'], list):
+              fields = register['field']
             else: raise Exception()
-            field['resets'] = resets
+            register['fields'] = fields
+            del register['field']
 
-            # Fold the fieldAccessPolicy list
-            fieldAccessPolicies = []
-            if isinstance(field['fieldAccessPolicies'], dict):
-              fieldAccessPolicies = [field['fieldAccessPolicies']['fieldAccessPolicy']]
-            elif isinstance(field['fieldAccessPolicies'], list):
-              fieldAccessPolicies = field['fieldAccessPolicies']
-            else: raise Exception()
-            field['fieldAccessPolicies'] = fieldAccessPolicies
+            for field in register['fields']:
 
-            # Fold the enumeratedValue list
-            enumeratedValues = []
-            if isinstance(field['enumeratedValues'], dict):
-              enumeratedValues = [field['enumeratedValues']['enumeratedValue']]
-            elif isinstance(field['enumeratedValues'], list):
-              enumeratedValues = field['enumeratedValues']
-            else: raise Exception()
-            field['enumeratedValues'] = enumeratedValues
+              # Fold the reset list
+              if 'resets' in field:
+                resets = []
+                if isinstance(field['resets'], dict):
+                  resets = [field['resets']['reset']]
+                elif isinstance(field['resets'], list):
+                  resets = field['resets']
+                else: raise Exception()
+                field['resets'] = resets
+
+              # Fold the fieldAccessPolicy list
+              if 'fieldAccessPolicies' in field:
+                fieldAccessPolicies = []
+                if isinstance(field['fieldAccessPolicies'], dict):
+                  fieldAccessPolicies = [field['fieldAccessPolicies']['fieldAccessPolicy']]
+                elif isinstance(field['fieldAccessPolicies'], list):
+                  fieldAccessPolicies = field['fieldAccessPolicies']
+                else: raise Exception()
+                field['fieldAccessPolicies'] = fieldAccessPolicies
+
+              # Fold the enumeratedValue list
+              if 'enumeratedValues' in field:
+                enumeratedValues = []
+                if isinstance(field['enumeratedValues'], dict):
+                  enumeratedValues = [field['enumeratedValues']['enumeratedValue']]
+                elif isinstance(field['enumeratedValues'], list):
+                  enumeratedValues = field['enumeratedValues']
+                else: raise Exception()
+                field['enumeratedValues'] = enumeratedValues
 
     return descriptor
 
