@@ -33,6 +33,9 @@ def main():
 
   anyv_register_version = "0.1.0"
 
+  # Default parameters
+  default_registerWidth = 32
+
   # Print license
   def print_license():
     print("""AnyV-Registers is under MIT License
@@ -172,6 +175,69 @@ SOFTWARE.""")
                   enumeratedValues = field['enumeratedValues']
                 else: raise Exception()
                 field['enumeratedValues'] = enumeratedValues
+
+    # Defaut register width in bits
+    default_registerWidth = 32
+
+    # Compute the offsets
+    for memoryMap in descriptor['component']['memoryMaps']:
+      memoryMap_baseAddress             = memoryMap['baseAddress'] if 'baseAddress' in memoryMap else 0x0
+      addressBlock_baseAddress          = memoryMap_baseAddress
+      register_address                  = addressBlock_baseAddress
+      previous_addressBlock_baseAddress = addressBlock_baseAddress
+      previous_addressBlock_range       = None
+
+      memoryMap_registerWidth = memoryMap['width'] if 'width' in memoryMap else default_registerWidth
+
+      for addressBlock in memoryMap['addressBlocks']:
+
+        block_registerWidth = addressBlock['width'] if 'width' in addressBlock else memoryMap_registerWidth
+
+        # Address block base address
+        if 'baseAddress' in addressBlock:
+          # Explicitely base address
+          addressBlock_baseAddress = memoryMap_baseAddress + addressBlock['baseAddress']
+        elif 'baseAddressAlign' in addressBlock:
+          # Align to boundary
+          addressBlock_baseAddress = (addressBlock_baseAddress // addressBlock['baseAddressAlign'] + 1) * addressBlock['baseAddressAlign']
+        elif previous_addressBlock_range != None:
+          # Align to previous block range
+          addressBlock_baseAddress = previous_addressBlock_baseAddress + previous_addressBlock_range
+        elif addressBlock_baseAddress != memoryMap_baseAddress:
+          # Fallback to last register offset
+          addressBlock_baseAddress = register_address + block_registerWidth / 8
+        addressBlock['baseAddress'] = addressBlock_baseAddress
+        previous_addressBlock_baseAddress = addressBlock['baseAddress']
+        previous_addressBlock_range       = addressBlock['range'] if 'range' in addressBlock else None
+
+        for register in addressBlock['registers']:
+          # Register address
+          if 'addressOffset' in register:
+            # Explicit offset
+            register_address = addressBlock_baseAddress + register['addressOffset']
+          elif 'addressAlign' in register:
+            # Align to boundary
+            register_address = (register_address // register['addressAlign'] + 1) * register['addressAlign']
+          elif register_address != addressBlock_baseAddress:
+            # Successive to last register
+            register_address = register_address + block_registerWidth / 8
+          register['address'] = register_address
+
+          # Field bit offset
+          field_bitOffset = 0x0
+          previous_field_bitWidth = None
+          for field in register['fields']:
+            if 'bitOffset' in field:
+              # Explicit offset
+              field_bitOffset = field['bitOffset']
+            elif 'bitAlign' in field:
+              # Align to boundary
+              field_bitOffset = (field_bitOffset // field['bitAlign'] + 1) * field['bitAlign']
+            elif field_bitOffset != 0x0:
+              # Successive to last field
+              field_bitOffset = field_bitOffset + previous_field_bitWidth
+            field['bitOffset'] = field_bitOffset
+            previous_field_bitWidth = field['bitWidth']
 
     return descriptor
 
