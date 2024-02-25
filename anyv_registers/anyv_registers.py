@@ -20,10 +20,11 @@ import xmltodict
 from jinja2 import Environment, FileSystemLoader, StrictUndefined
 import jinja2.exceptions as jinja2_exceptions
 
-from j2gpp.filters import extra_filters
-from j2gpp.tests import extra_tests
+from j2gpp.filters import extra_filters as j2gpp_extra_filters
+from j2gpp.tests import extra_tests as j2gpp_extra_tests
 from j2gpp.utils import *
 
+from anyv_registers.filters import extra_filters
 from anyv_registers import templates
 import importlib.resources
 
@@ -277,7 +278,8 @@ SOFTWARE.""")
   env.add_extension('jinja2.ext.do')
   env.add_extension('jinja2.ext.debug')
   env.filters.update(extra_filters)
-  env.tests.update(extra_tests)
+  env.filters.update(j2gpp_extra_filters)
+  env.tests.update(j2gpp_extra_tests)
 
   # Create directories for output path
   output_directory = os.path.join(args.output, component_name)
