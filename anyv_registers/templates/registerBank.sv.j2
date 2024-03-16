@@ -1,11 +1,92 @@
 
+{% filter restructure %}
+
+module {{component.name}} (
+  {%- filter align %}
+  // Control interface
+  input  §        §§ control__pclock,
+  input  §        §§ control__presetn,
+  input  §        §§ control__psel,
+  input  §        §§ control__penable,
+  output §        §§ control__pready,
+  input  §  [2:0] §§ control__pprot,
+  input  § [31:0] §§ control__paddr,
+  input  §        §§ control__pwrite,
+  input  § [31:0] §§ control__pwdata,
+  input  §  [7:0] §§ control__pstrb,
+  output § [31:0] §§ control__prdata,
+  output §        §§ control__pslverr,
+  // Register read
+  {%- for memoryMap in component.memoryMaps -%} {%- for addressBlock in memoryMap.addressBlocks -%} {%- for register in addressBlock.registers %}
+  {%- set block_prefix = (addressBlock.name|snake|lower)~"__" if memoryMap.addressBlocks is not singleton else "" %}
+  output § {{register.size|arrsize}} §§ register__{{block_prefix}}{{register.name|snake|lower}},
+  {%- endfor -%} {%- endfor -%} {%- endfor %}
+  // Dummy
+  output § §§ dummy
+  {%- endfilter %}
+);
+
+{§ spacing 3 §}
+
 {% filter align %}
 // Registers
-{% for register in component.memoryMaps.memoryMap.addressBlock.register %}
-{{register.name}}
-{{register.addressOffset}}
-{{register.size}}
-{% endfor %}
+{%- for memoryMap in component.memoryMaps -%} {% for addressBlock in memoryMap.addressBlocks -%} {%- for register in addressBlock.registers %}
+{%- set block_prefix = (addressBlock.name|snake|lower)~"__" if memoryMap.addressBlocks is not singleton else "" %}
+{%- if register.fields is defined -%} {%- for field in register.fields %}
+logic § {{field.bitWidth|arrsize}} §§ register__{{block_prefix}}{{register.name|snake|lower}}__{{field.name|snake|lower}}__register;
+{%- endfor -%} {%- else %}
+logic § {{register.size|arrsize}} §§ register__{{block_prefix}}{{register.name|snake|lower}}__register;
+{%- endif -%}
+{%- endfor -%} {%- endfor %} {%- endfor -%}
+{%- endfilter %}
 
+{§ spacing 3 §}
+
+// Register reset and write
+always_ff @(posedge control__pclock or negedge control__presetn) begin
+
+  {§ spacing 1 §}
+
+  // Reset
+  if (!control__presetn) begin
+    {%- filter align -%}
+    {%- for memoryMap in component.memoryMaps -%} {%- for addressBlock in memoryMap.addressBlocks -%} {%- for register in addressBlock.registers %}
+    {%- set block_prefix = (addressBlock.name|snake|lower)~"__" if memoryMap.addressBlocks is not singleton else "" %}
+    {%- if register.fields is defined -%} {%- for field in register.fields -%} {%- if field.reset is defined %}
+    register__{{block_prefix}}{{register.name|snake|lower}}__{{field.name|snake|lower}}__register § <= {{field.reset|hexadecimal}}; §§
+    {%- endif -%}
+    {%- endfor -%} {%- else -%} {%- if register.reset is defined -%}
+    register__{{block_prefix}}{{register.name|snake|lower}}__register § <= {{register.reset|hexadecimal}}; §§
+    {%- endif -%} {%- endif -%}
+    {%- endfor -%} {%- endfor -%} {%- endfor -%}
+    {%- endfilter %}
+
+  {§ spacing 1 §}
+
+  // Software write
+  end else if (   control__psel
+               && control__penable
+               && control__pwrite) begin
+    case (control__paddr)
+      {%- filter align %}
+      {%- for memoryMap in component.memoryMaps -%} {%- for addressBlock in memoryMap.addressBlocks -%} {%- for register in addressBlock.registers %}
+      {%- set block_prefix = (addressBlock.name|snake|lower)~"__" if memoryMap.addressBlocks is not singleton else "" %}
+      {%- if register.fields is defined -%} {%- for field in register.fields %}
+      32'h{{register.address|hexadecimal}} §§ register__{{block_prefix}}{{register.name|snake|lower}}__{{field.name|snake|lower}}__register § <= control__pwdata § [{{field.bitOffset+field.bitWidth-1}}:{{field.bitOffset}}]; §§
+      {%- endfor -%} {%- else %}
+      32'h{{register.address|hexadecimal}} §§ register__{{block_prefix}}{{register.name|snake|lower}}__register § <= control__pwdata § [{{register.width-1}}:0]; §§
+      {%- endif -%}
+      {%- endfor -%} {%- endfor -%} {%- endfor -%}
+      {%- endfilter %}
+    endcase
+  end
+
+  {§ spacing 1 §}
+
+end
+
+{§ spacing 1 §}
+
+endmodule
 
 {% endfilter %}
