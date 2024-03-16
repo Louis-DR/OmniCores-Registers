@@ -252,6 +252,19 @@ SOFTWARE.""")
               if 'size' in register:
                 register['width'] = register['size']
 
+    # Simplify the reset
+    for memoryMap in descriptor['component']['memoryMaps']:
+      if 'addressBlocks' in memoryMap:
+        for addressBlock in memoryMap['addressBlocks']:
+          if 'registers' in addressBlock:
+            for register in addressBlock['registers']:
+              if 'resets' in register:
+                register['reset'] = register['resets'][0]['value']
+              if 'fields' in register:
+                for field in register['fields']:
+                  if 'resets' in field:
+                    field['reset'] = field['resets'][0]['value']
+
     return descriptor
 
   # Command line arguments
@@ -311,8 +324,6 @@ SOFTWARE.""")
 
       # Output file is the name of the component with the extension of the template
       extension   = template_path.split('.')[1].removesuffix('.j2')
-      print(f"component_name = {component_name}")
-      print(f"extension = {extension}")
       output_path = os.path.join(output_directory, f"{component_name}.{extension}")
       output_str  = ""
 
@@ -343,6 +354,9 @@ SOFTWARE.""")
         # Catch all other Python exceptions (in filter for example)
         traceback = jinja2_render_traceback(template_path, including_non_template=True)
         throw_error(f"Exception occurred while rendering '{template_path}' :\n{traceback}\n      {type(exc).__name__} - {exc}")
+
+      # Trim trailing whitespace
+      output_str = re.sub(r' +\n', '\n', output_str)
 
       # Write the rendered file
       try:
