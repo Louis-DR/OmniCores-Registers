@@ -265,6 +265,19 @@ SOFTWARE.""")
                   if 'resets' in field:
                     field['reset'] = field['resets'][0]['value']
 
+    # Default harddware access
+    for memoryMap in descriptor['component']['memoryMaps']:
+      if 'addressBlocks' in memoryMap:
+        for addressBlock in memoryMap['addressBlocks']:
+          if 'registers' in addressBlock:
+            for register in addressBlock['registers']:
+              if 'hardwareAccess' not in register:
+                register['hardwareAccess'] = "read-only"
+              if 'fields' in register:
+                for field in register['fields']:
+                  if 'hardwareAccess' not in field:
+                    field['hardwareAccess'] = "read-only"
+
     return descriptor
 
   # Command line arguments
