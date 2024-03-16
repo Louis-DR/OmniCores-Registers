@@ -25,6 +25,17 @@ module {{component.name}} (
   output § {{register.size|arrsize}} §§ register__{{block_prefix}}{{register.name|snake|lower}},
   {%- endif -%} {%- endif -%}
   {%- endfor -%} {%- endfor %} {%- endfor %}
+  // Register write
+  {%- for memoryMap in component.memoryMaps -%} {% for addressBlock in memoryMap.addressBlocks -%} {%- for register in addressBlock.registers %}
+  {%- set block_prefix = (addressBlock.name|snake|lower)~"__" if memoryMap.addressBlocks is not singleton else "" %}
+  {%- if register.fields is defined -%} {%- for field in register.fields -%} {%- if field.hardwareAccess in ["read-write", "write-only"] %}
+  output §                            §§ register__{{block_prefix}}{{register.name|snake|lower}}__{{field.name|snake|lower}}__hw_write_enable,
+  output § {{field.bitWidth|arrsize}} §§ register__{{block_prefix}}{{register.name|snake|lower}}__{{field.name|snake|lower}}__hw_write_data,
+  {%- endif -%} {%- endfor -%} {%- else -%} {%- if register.hardwareAccess in ["read-write", "write-only"] %}
+  output §                           §§ register__{{block_prefix}}{{register.name|snake|lower}}__hw_write_enable,
+  output § {{register.size|arrsize}} §§ register__{{block_prefix}}{{register.name|snake|lower}}__hw_write_data,
+  {%- endif -%} {%- endif -%}
+  {%- endfor -%} {%- endfor %} {%- endfor %}
   // Dummy
   output § §§ dummy
   {%- endfilter %}
@@ -84,6 +95,20 @@ always_ff @(posedge control__pclock or negedge control__presetn) begin
       {%- endfilter %}
     endcase
   end
+
+  {§ spacing 1 §}
+
+  // Hardware write
+  {%- for memoryMap in component.memoryMaps -%} {% for addressBlock in memoryMap.addressBlocks -%} {%- for register in addressBlock.registers %}
+  {%- set block_prefix = (addressBlock.name|snake|lower)~"__" if memoryMap.addressBlocks is not singleton else "" %}
+  {%- if register.fields is defined -%} {%- for field in register.fields -%} {%- if field.hardwareAccess in ["read-write", "write-only"] %}
+  if (register__{{block_prefix}}{{register.name|snake|lower}}__{{field.name|snake|lower}}__hw_write_enable)
+    register__{{block_prefix}}{{register.name|snake|lower}}__{{field.name|snake|lower}}__register <= register__{{block_prefix}}{{register.name|snake|lower}}__{{field.name|snake|lower}}__hw_write_data;
+  {%- endif -%} {%- endfor -%} {%- else -%} {%- if register.hardwareAccess in ["read-write", "write-only"] %}
+  if (register__{{block_prefix}}{{register.name|snake|lower}}__hw_write_enable)
+    register__{{block_prefix}}{{register.name|snake|lower}}__register <= register__{{block_prefix}}{{register.name|snake|lower}}__hw_write_data;
+  {%- endif -%} {%- endif -%}
+  {%- endfor -%} {%- endfor %} {%- endfor %}
 
   {§ spacing 1 §}
 
