@@ -304,7 +304,7 @@ SOFTWARE.""")
                     if 'fieldAccessPolicies' in register:
                       field['softwareAccess'] = field['fieldAccessPolicies'][0]['access']
                     else:
-                      field['softwareAccess'] = "read-write"
+                      field['softwareAccess'] = register['softwareAccess']
 
     # Harddware access
     for memoryMap in descriptor['component']['memoryMaps']:
@@ -317,7 +317,7 @@ SOFTWARE.""")
               if 'fields' in register:
                 for field in register['fields']:
                   if 'hardwareAccess' not in field:
-                    field['hardwareAccess'] = "read-only"
+                    field['hardwareAccess'] = register['hardwareAccess']
 
     # Access lock
     for memoryMap in descriptor['component']['memoryMaps']:
