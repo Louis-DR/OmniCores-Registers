@@ -8,14 +8,14 @@ module {{component.name}} (
   input  §        §§ control__presetn,
   input  §        §§ control__psel,
   input  §        §§ control__penable,
-  output §        §§ control__pready,
+  output logic §        §§ control__pready,
   input  §  [2:0] §§ control__pprot,
   input  § [31:0] §§ control__paddr,
   input  §        §§ control__pwrite,
   input  § [31:0] §§ control__pwdata,
   input  §  [7:0] §§ control__pstrb,
-  output § [31:0] §§ control__prdata,
-  output §        §§ control__pslverr,
+  output logic § [31:0] §§ control__prdata,
+  output logic §        §§ control__pslverr,
   // Register read
   {%- for memoryMap in component.memoryMaps -%} {% for addressBlock in memoryMap.addressBlocks -%} {%- for register in addressBlock.registers %}
   {%- set block_prefix = (addressBlock.name|snake|lower)~"__" if memoryMap.addressBlocks is not singleton else "" %}
