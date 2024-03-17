@@ -4,16 +4,16 @@
 module {{component.name}} (
   {%- filter align %}
   // Control interface
-  input  §        §§ control__pclock,
-  input  §        §§ control__presetn,
-  input  §        §§ control__psel,
-  input  §        §§ control__penable,
+  input        §        §§ control__pclock,
+  input        §        §§ control__presetn,
+  input        §        §§ control__psel,
+  input        §        §§ control__penable,
   output logic §        §§ control__pready,
-  input  §  [2:0] §§ control__pprot,
-  input  § [31:0] §§ control__paddr,
-  input  §        §§ control__pwrite,
-  input  § [31:0] §§ control__pwdata,
-  input  §  [7:0] §§ control__pstrb,
+  input        §  [2:0] §§ control__pprot,
+  input        § [31:0] §§ control__paddr,
+  input        §        §§ control__pwrite,
+  input        § [31:0] §§ control__pwdata,
+  input        §  [7:0] §§ control__pstrb,
   output logic § [31:0] §§ control__prdata,
   output logic §        §§ control__pslverr,
   // Register read
@@ -22,7 +22,7 @@ module {{component.name}} (
   {%- if register.fields is defined -%} {%- for field in register.fields -%} {%- if field.hardwareAccess in ["read-write", "read-only"] %}
   output § {{field.bitWidth|arrsize}} §§ register__{{block_prefix}}{{register.name|snake|lower}}__{{field.name|snake|lower}},
   {%- endif -%} {%- endfor -%} {%- else -%} {%- if register.hardwareAccess in ["read-write", "read-only"] %}
-  output § {{register.size|arrsize}} §§ register__{{block_prefix}}{{register.name|snake|lower}},
+  output § {{register.size|arrsize}}  §§ register__{{block_prefix}}{{register.name|snake|lower}},
   {%- endif -%} {%- endif -%}
   {%- endfor -%} {%- endfor %} {%- endfor %}
   // Register write
@@ -32,8 +32,8 @@ module {{component.name}} (
   input §                            §§ register__{{block_prefix}}{{register.name|snake|lower}}__{{field.name|snake|lower}}__hw_write_enable,
   input § {{field.bitWidth|arrsize}} §§ register__{{block_prefix}}{{register.name|snake|lower}}__{{field.name|snake|lower}}__hw_write_data,
   {%- endif -%} {%- endfor -%} {%- else -%} {%- if register.hardwareAccess in ["read-write", "write-only"] %}
-  input §                           §§ register__{{block_prefix}}{{register.name|snake|lower}}__hw_write_enable,
-  input § {{register.size|arrsize}} §§ register__{{block_prefix}}{{register.name|snake|lower}}__hw_write_data,
+  input §                            §§ register__{{block_prefix}}{{register.name|snake|lower}}__hw_write_enable,
+  input § {{register.size|arrsize}}  §§ register__{{block_prefix}}{{register.name|snake|lower}}__hw_write_data,
   {%- endif -%} {%- endif -%}
   {%- endfor -%} {%- endfor %} {%- endfor %}
   // Register lock
@@ -59,7 +59,7 @@ module {{component.name}} (
 {%- if register.fields is defined -%} {%- for field in register.fields %}
 logic § {{field.bitWidth|arrsize}} §§ register__{{block_prefix}}{{register.name|snake|lower}}__{{field.name|snake|lower}}__register;
 {%- endfor -%} {%- else %}
-logic § {{register.size|arrsize}} §§ register__{{block_prefix}}{{register.name|snake|lower}}__register;
+logic § {{register.size|arrsize}}  §§ register__{{block_prefix}}{{register.name|snake|lower}}__register;
 {%- endif -%}
 {%- endfor -%} {%- endfor %} {%- endfor -%}
 {%- endfilter %}
@@ -80,7 +80,7 @@ always_ff @(posedge control__pclock or negedge control__presetn) begin
     register__{{block_prefix}}{{register.name|snake|lower}}__{{field.name|snake|lower}}__register § <= {{field.reset|hexadecimal}}; §§
     {%- endif -%}
     {%- endfor -%} {%- else -%} {%- if register.reset is defined -%}
-    register__{{block_prefix}}{{register.name|snake|lower}}__register § <= {{register.reset|hexadecimal}}; §§
+    register__{{block_prefix}}{{register.name|snake|lower}}__register                             § <= {{register.reset|hexadecimal}}; §§
     {%- endif -%} {%- endif -%}
     {%- endfor -%} {%- endfor -%} {%- endfor -%}
     {%- endfilter %}
@@ -149,7 +149,7 @@ always_comb begin
         {%- if register.fields is defined %}
         32'h{{register.address|hexadecimal}} §§ : § begin {%- for field in register.fields -%} {%- if field.softwareAccess in ["read-write", "read-only"] %} § {% if field.accessLock is defined    and field.accessLock in ["read-write", "write-only"]    -%} if (!register__{{block_prefix}}{{register.name|snake|lower}}__{{field.name|snake|lower}}__lock) {%- endif %} § control__prdata § [{{field.bitOffset+field.bitWidth-1}}:{{field.bitOffset}}] §§ = register__{{block_prefix}}{{register.name|snake|lower}}__{{field.name|snake|lower}}__register; {{"end" if loop.last else "\n §§ § "}} {%- endif -%} {%- endfor -%}
         {%- else %} {%- if register.softwareAccess in ["read-write", "read-only"] %}
-        32'h{{register.address|hexadecimal}} §§ : §                                                                                                          § {% if register.accessLock is defined and register.accessLock in ["read-write", "write-only"] -%} if (!register__{{block_prefix}}{{register.name|snake|lower}}__lock)                             {%- endif %} § control__prdata § [{{register.width-1}}:0] §§ = register__{{block_prefix}}{{register.name|snake|lower}}__register;
+        32'h{{register.address|hexadecimal}} §§ : §                                                                                                          § {% if register.accessLock is defined and register.accessLock in ["read-write", "write-only"] -%} if (!register__{{block_prefix}}{{register.name|snake|lower}}__lock)                             {%- endif %} § control__prdata § [{{register.width-1}}:0]                                   §§ = register__{{block_prefix}}{{register.name|snake|lower}}__register;
         {%- endif -%} {%- endif -%}
         {%- endfor -%} {%- endfor -%} {%- endfor -%}
         {%- endfilter %}
@@ -182,7 +182,7 @@ end
 {%- if register.fields is defined -%} {%- for field in register.fields -%} {%- if field.hardwareAccess in ["read-write", "read-only"] %}
 assign register__{{block_prefix}}{{register.name|snake|lower}}__{{field.name|snake|lower}} § = register__{{block_prefix}}{{register.name|snake|lower}}__{{field.name|snake|lower}}__register;
 {%- endif -%} {%- endfor -%} {%- else -%} {%- if register.hardwareAccess in ["read-write", "read-only"] %}
-assign register__{{block_prefix}}{{register.name|snake|lower}} § = register__{{block_prefix}}{{register.name|snake|lower}}__register;
+assign register__{{block_prefix}}{{register.name|snake|lower}}                             § = register__{{block_prefix}}{{register.name|snake|lower}}__register;
 {%- endif -%} {%- endif -%}
 {%- endfor -%} {%- endfor %} {%- endfor -%}
 {%- endfilter %}
