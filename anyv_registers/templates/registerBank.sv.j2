@@ -29,11 +29,11 @@ module {{component.name}} (
   {%- for memoryMap in component.memoryMaps -%} {% for addressBlock in memoryMap.addressBlocks -%} {%- for register in addressBlock.registers %}
   {%- set block_prefix = (addressBlock.name|snake|lower)~"__" if memoryMap.addressBlocks is not singleton else "" %}
   {%- if register.fields is defined -%} {%- for field in register.fields -%} {%- if field.hardwareAccess in ["read-write", "write-only"] %}
-  output §                            §§ register__{{block_prefix}}{{register.name|snake|lower}}__{{field.name|snake|lower}}__hw_write_enable,
-  output § {{field.bitWidth|arrsize}} §§ register__{{block_prefix}}{{register.name|snake|lower}}__{{field.name|snake|lower}}__hw_write_data,
+  input §                            §§ register__{{block_prefix}}{{register.name|snake|lower}}__{{field.name|snake|lower}}__hw_write_enable,
+  input § {{field.bitWidth|arrsize}} §§ register__{{block_prefix}}{{register.name|snake|lower}}__{{field.name|snake|lower}}__hw_write_data,
   {%- endif -%} {%- endfor -%} {%- else -%} {%- if register.hardwareAccess in ["read-write", "write-only"] %}
-  output §                           §§ register__{{block_prefix}}{{register.name|snake|lower}}__hw_write_enable,
-  output § {{register.size|arrsize}} §§ register__{{block_prefix}}{{register.name|snake|lower}}__hw_write_data,
+  input §                           §§ register__{{block_prefix}}{{register.name|snake|lower}}__hw_write_enable,
+  input § {{register.size|arrsize}} §§ register__{{block_prefix}}{{register.name|snake|lower}}__hw_write_data,
   {%- endif -%} {%- endif -%}
   {%- endfor -%} {%- endfor %} {%- endfor %}
   // Register lock
