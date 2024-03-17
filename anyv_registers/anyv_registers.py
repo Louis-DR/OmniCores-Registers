@@ -218,29 +218,39 @@ SOFTWARE.""")
             addressBlock_baseAddress = previous_addressBlock_baseAddress + previous_addressBlock_range
           elif addressBlock_baseAddress != memoryMap_baseAddress:
             # Fallback to last register offset
-            addressBlock_baseAddress = register_address + block_registerWidth / 8
+            addressBlock_baseAddress = register_address + int(block_registerWidth / 8)
           addressBlock['baseAddress'] = addressBlock_baseAddress
           previous_addressBlock_baseAddress = addressBlock['baseAddress']
           previous_addressBlock_range       = addressBlock['range'] if 'range' in addressBlock else None
 
+          register_address = addressBlock_baseAddress
+          register_first = True
           if 'registers' in addressBlock:
             for register in addressBlock['registers']:
+              print(f"REGISTER {register['name']}")
+              print(f"  register_address         = {register_address}")
+              print(f"  addressBlock_baseAddress = {addressBlock_baseAddress}")
               # Register address
               if 'addressOffset' in register:
+                print(f"  A")
                 # Explicit offset
                 register_address = addressBlock_baseAddress + register['addressOffset']
               elif 'addressAlign' in register:
+                print(f"  B")
                 # Align to boundary
                 register_address = (register_address // register['addressAlign'] + 1) * register['addressAlign']
-              elif register_address != addressBlock_baseAddress:
+              elif not register_first:
+                print(f"  C")
                 # Successive to last register
-                register_address = register_address + block_registerWidth / 8
+                register_address = register_address + int(block_registerWidth / 8)
               register['address'] = register_address
+              register_first = False
 
               # Field bit offset
+              field_bitOffset = 0x0
+              field_first = True
+              previous_field_bitWidth = None
               if 'fields' in register:
-                field_bitOffset = 0x0
-                previous_field_bitWidth = None
                 for field in register['fields']:
                   if 'bitOffset' in field:
                     # Explicit offset
@@ -248,11 +258,12 @@ SOFTWARE.""")
                   elif 'bitAlign' in field:
                     # Align to boundary
                     field_bitOffset = (field_bitOffset // field['bitAlign'] + 1) * field['bitAlign']
-                  elif field_bitOffset != 0x0:
+                  elif not field_first:
                     # Successive to last field
                     field_bitOffset = field_bitOffset + previous_field_bitWidth
                   field['bitOffset'] = field_bitOffset
                   previous_field_bitWidth = field['bitWidth']
+                  field_first = False
 
     # Compute the size
     for memoryMap in descriptor['component']['memoryMaps']:
