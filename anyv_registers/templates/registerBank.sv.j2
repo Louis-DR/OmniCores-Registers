@@ -57,7 +57,7 @@ logic § {{register.size|arrsize}} §§ register__{{block_prefix}}{{register.nam
 
 {§ spacing 1 §}
 
-// Register reset and write
+// Reset and write
 always_ff @(posedge control__pclock or negedge control__presetn) begin
 
   {§ spacing 1 §}
@@ -81,15 +81,15 @@ always_ff @(posedge control__pclock or negedge control__presetn) begin
   // Software write
   end else if (   control__psel
                && control__penable
-               && control__pwrite) begin
+               && control__pwrite ) begin
     case (control__paddr)
       {%- filter align %}
       {%- for memoryMap in component.memoryMaps -%} {%- for addressBlock in memoryMap.addressBlocks -%} {%- for register in addressBlock.registers %}
       {%- set block_prefix = (addressBlock.name|snake|lower)~"__" if memoryMap.addressBlocks is not singleton else "" %}
       {%- if register.fields is defined -%} {%- for field in register.fields -%} {%- if field.softwareAccess in ["read-write", "write-only"] %}
-      32'h{{register.address|hexadecimal}} §§ register__{{block_prefix}}{{register.name|snake|lower}}__{{field.name|snake|lower}}__register § <= control__pwdata § [{{field.bitOffset+field.bitWidth-1}}:{{field.bitOffset}}]; §§
+      32'h{{register.address|hexadecimal}} §§ : register__{{block_prefix}}{{register.name|snake|lower}}__{{field.name|snake|lower}}__register § <= control__pwdata § [{{field.bitOffset+field.bitWidth-1}}:{{field.bitOffset}}]; §§
       {%- endif -%} {%- endfor -%} {%- else %} {%- if register.softwareAccess in ["read-write", "write-only"] %}
-      32'h{{register.address|hexadecimal}} §§ register__{{block_prefix}}{{register.name|snake|lower}}__register § <= control__pwdata § [{{register.width-1}}:0]; §§
+      32'h{{register.address|hexadecimal}} §§ : register__{{block_prefix}}{{register.name|snake|lower}}__register § <= control__pwdata § [{{register.width-1}}:0]; §§
       {%- endif -%} {%- endif -%}
       {%- endfor -%} {%- endfor -%} {%- endfor -%}
       {%- endfilter %}
@@ -109,6 +109,56 @@ always_ff @(posedge control__pclock or negedge control__presetn) begin
     register__{{block_prefix}}{{register.name|snake|lower}}__register <= register__{{block_prefix}}{{register.name|snake|lower}}__hw_write_data;
   {%- endif -%} {%- endif -%}
   {%- endfor -%} {%- endfor %} {%- endfor %}
+
+  {§ spacing 1 §}
+
+end
+
+{§ spacing 1 §}
+
+// Software response and read
+always_comb begin
+  if (   control__psel
+      && control__penable ) begin
+
+    {§ spacing 1 §}
+
+    // Software response
+    control__pready  = 1'b1;
+    control__pslverr = 1'b0;
+
+    {§ spacing 1 §}
+
+    // Software read
+    if (!control__pwrite) begin
+      control__prdata  = 32'd0;
+      case (control__paddr)
+
+        {%- filter align %}
+        {%- for memoryMap in component.memoryMaps -%} {%- for addressBlock in memoryMap.addressBlocks -%} {%- for register in addressBlock.registers %}
+        {%- set block_prefix = (addressBlock.name|snake|lower)~"__" if memoryMap.addressBlocks is not singleton else "" %}
+        {%- if register.fields is defined %}
+        32'h{{register.address|hexadecimal}} §§ : begin {%- for field in register.fields -%} {%- if field.softwareAccess in ["read-write", "read-only"] %} § control__prdata § [{{field.bitOffset+field.bitWidth-1}}:{{field.bitOffset}}] §§ = register__{{block_prefix}}{{register.name|snake|lower}}__{{field.name|snake|lower}}__register; {{"end" if loop.last else "\n §§ "}} {%- endif -%} {%- endfor -%}
+        {%- else %} {%- if register.softwareAccess in ["read-write", "read-only"] %}
+        32'h{{register.address|hexadecimal}} §§ : § control__prdata § [{{register.width-1}}:0] §§ = register__{{block_prefix}}{{register.name|snake|lower}}__register;
+        {%- endif -%} {%- endif -%}
+        {%- endfor -%} {%- endfor -%} {%- endfor -%}
+        {%- endfilter %}
+        default: begin
+          control__prdata  = 32'd0;
+          control__pslverr =  1'b1;
+        end
+      endcase
+    end
+
+  {§ spacing 1 §}
+
+  // Bus return to zero
+  end else begin
+    control__pready  =  1'b0;
+    control__pslverr =  1'b0;
+    control__prdata  = 32'd0;
+  end
 
   {§ spacing 1 §}
 
