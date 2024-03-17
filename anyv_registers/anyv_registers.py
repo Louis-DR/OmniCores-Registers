@@ -319,6 +319,18 @@ SOFTWARE.""")
                   if 'hardwareAccess' not in field:
                     field['hardwareAccess'] = "read-only"
 
+    # Access lock
+    for memoryMap in descriptor['component']['memoryMaps']:
+      if 'addressBlocks' in memoryMap:
+        for addressBlock in memoryMap['addressBlocks']:
+          if 'registers' in addressBlock:
+            for register in addressBlock['registers']:
+              if 'accessLock' in register:
+                if 'fields' in register:
+                  for field in register['fields']:
+                    if 'accessLock' not in field:
+                      field['accessLock'] = register['accessLock']
+
     return descriptor
 
   # Command line arguments

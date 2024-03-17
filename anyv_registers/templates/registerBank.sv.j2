@@ -36,6 +36,15 @@ module {{component.name}} (
   output § {{register.size|arrsize}} §§ register__{{block_prefix}}{{register.name|snake|lower}}__hw_write_data,
   {%- endif -%} {%- endif -%}
   {%- endfor -%} {%- endfor %} {%- endfor %}
+  // Register lock
+  {%- for memoryMap in component.memoryMaps -%} {% for addressBlock in memoryMap.addressBlocks -%} {%- for register in addressBlock.registers %}
+  {%- set block_prefix = (addressBlock.name|snake|lower)~"__" if memoryMap.addressBlocks is not singleton else "" %}
+  {%- if register.fields is defined -%} {%- for field in register.fields -%} {%- if field.accessLock is defined %}
+  input § §§ register__{{block_prefix}}{{register.name|snake|lower}}__{{field.name|snake|lower}}__lock,
+  {%- endif -%} {%- endfor -%} {%- else -%} {%- if register.accessLock is defined %}
+  input § §§ register__{{block_prefix}}{{register.name|snake|lower}}__lock,
+  {%- endif -%} {%- endif -%}
+  {%- endfor -%} {%- endfor %} {%- endfor %}
   // Dummy
   output § §§ dummy
   {%- endfilter %}
@@ -87,9 +96,9 @@ always_ff @(posedge control__pclock or negedge control__presetn) begin
       {%- for memoryMap in component.memoryMaps -%} {%- for addressBlock in memoryMap.addressBlocks -%} {%- for register in addressBlock.registers %}
       {%- set block_prefix = (addressBlock.name|snake|lower)~"__" if memoryMap.addressBlocks is not singleton else "" %}
       {%- if register.fields is defined -%} {%- for field in register.fields -%} {%- if field.softwareAccess in ["read-write", "write-only"] %}
-      32'h{{register.address|hexadecimal}} §§ : register__{{block_prefix}}{{register.name|snake|lower}}__{{field.name|snake|lower}}__register § <= control__pwdata § [{{field.bitOffset+field.bitWidth-1}}:{{field.bitOffset}}]; §§
+      32'h{{register.address|hexadecimal}} §§ : {% if field.accessLock is defined    and field.accessLock in ["read-write", "write-only"]    -%} if (!register__{{block_prefix}}{{register.name|snake|lower}}__{{field.name|snake|lower}}__lock) {%- endif %} § register__{{block_prefix}}{{register.name|snake|lower}}__{{field.name|snake|lower}}__register § <= control__pwdata § [{{field.bitOffset+field.bitWidth-1}}:{{field.bitOffset}}]; §§
       {%- endif -%} {%- endfor -%} {%- else %} {%- if register.softwareAccess in ["read-write", "write-only"] %}
-      32'h{{register.address|hexadecimal}} §§ : register__{{block_prefix}}{{register.name|snake|lower}}__register § <= control__pwdata § [{{register.width-1}}:0]; §§
+      32'h{{register.address|hexadecimal}} §§ : {% if register.accessLock is defined and register.accessLock in ["read-write", "write-only"] -%} if (!register__{{block_prefix}}{{register.name|snake|lower}}__lock)                             {%- endif %} § register__{{block_prefix}}{{register.name|snake|lower}}__register                             § <= control__pwdata § [{{register.width-1}}:0]; §§
       {%- endif -%} {%- endif -%}
       {%- endfor -%} {%- endfor -%} {%- endfor -%}
       {%- endfilter %}
@@ -138,9 +147,9 @@ always_comb begin
         {%- for memoryMap in component.memoryMaps -%} {%- for addressBlock in memoryMap.addressBlocks -%} {%- for register in addressBlock.registers %}
         {%- set block_prefix = (addressBlock.name|snake|lower)~"__" if memoryMap.addressBlocks is not singleton else "" %}
         {%- if register.fields is defined %}
-        32'h{{register.address|hexadecimal}} §§ : begin {%- for field in register.fields -%} {%- if field.softwareAccess in ["read-write", "read-only"] %} § control__prdata § [{{field.bitOffset+field.bitWidth-1}}:{{field.bitOffset}}] §§ = register__{{block_prefix}}{{register.name|snake|lower}}__{{field.name|snake|lower}}__register; {{"end" if loop.last else "\n §§ "}} {%- endif -%} {%- endfor -%}
+        32'h{{register.address|hexadecimal}} §§ : § begin {%- for field in register.fields -%} {%- if field.softwareAccess in ["read-write", "read-only"] %} § {% if field.accessLock is defined    and field.accessLock in ["read-write", "write-only"]    -%} if (!register__{{block_prefix}}{{register.name|snake|lower}}__{{field.name|snake|lower}}__lock) {%- endif %} § control__prdata § [{{field.bitOffset+field.bitWidth-1}}:{{field.bitOffset}}] §§ = register__{{block_prefix}}{{register.name|snake|lower}}__{{field.name|snake|lower}}__register; {{"end" if loop.last else "\n §§ § "}} {%- endif -%} {%- endfor -%}
         {%- else %} {%- if register.softwareAccess in ["read-write", "read-only"] %}
-        32'h{{register.address|hexadecimal}} §§ : § control__prdata § [{{register.width-1}}:0] §§ = register__{{block_prefix}}{{register.name|snake|lower}}__register;
+        32'h{{register.address|hexadecimal}} §§ : §                                                                                                          § {% if register.accessLock is defined and register.accessLock in ["read-write", "write-only"] -%} if (!register__{{block_prefix}}{{register.name|snake|lower}}__lock)                             {%- endif %} § control__prdata § [{{register.width-1}}:0] §§ = register__{{block_prefix}}{{register.name|snake|lower}}__register;
         {%- endif -%} {%- endif -%}
         {%- endfor -%} {%- endfor -%} {%- endfor -%}
         {%- endfilter %}
