@@ -114,13 +114,14 @@ SOFTWARE.""")
       for addressBlock in memoryMap['addressBlocks']:
 
         # Fold the accessPolicy list
-        accessPolicies = []
-        if isinstance(addressBlock['accessPolicies'], dict):
-          accessPolicies = [addressBlock['accessPolicies']['accessPolicy']]
-        elif isinstance(addressBlock['accessPolicies'], list):
-          accessPolicies = addressBlock['accessPolicies']
-        else: raise Exception()
-        addressBlock['accessPolicies'] = accessPolicies
+        if 'accessPolicies' in addressBlock:
+          accessPolicies = []
+          if isinstance(addressBlock['accessPolicies'], dict):
+            accessPolicies = [addressBlock['accessPolicies']['accessPolicy']]
+          elif isinstance(addressBlock['accessPolicies'], list):
+            accessPolicies = addressBlock['accessPolicies']
+          else: raise Exception()
+          addressBlock['accessPolicies'] = accessPolicies
 
         # Fold the register list
         registers = []
@@ -133,6 +134,16 @@ SOFTWARE.""")
         del addressBlock['register']
 
         for register in addressBlock['registers']:
+
+          # Fold the accessPolicy list
+          if 'accessPolicies' in register:
+            accessPolicies = []
+            if isinstance(register['accessPolicies'], dict):
+              accessPolicies = [register['accessPolicies']['accessPolicy']]
+            elif isinstance(register['accessPolicies'], list):
+              accessPolicies = register['accessPolicies']
+            else: raise Exception()
+            register['accessPolicies'] = accessPolicies
 
           # Fold the field list
           if 'field' in register:
@@ -265,7 +276,26 @@ SOFTWARE.""")
                   if 'resets' in field:
                     field['reset'] = field['resets'][0]['value']
 
-    # Default harddware access
+    # Software access
+    for memoryMap in descriptor['component']['memoryMaps']:
+      if 'addressBlocks' in memoryMap:
+        for addressBlock in memoryMap['addressBlocks']:
+          if 'registers' in addressBlock:
+            for register in addressBlock['registers']:
+              if 'softwareAccess' not in register:
+                if 'accessPolicies' in register:
+                  register['softwareAccess'] = register['accessPolicies'][0]['access']
+                else:
+                  register['softwareAccess'] = "read-write"
+              if 'fields' in register:
+                for field in register['fields']:
+                  if 'softwareAccess' not in field:
+                    if 'fieldAccessPolicies' in register:
+                      field['softwareAccess'] = field['fieldAccessPolicies'][0]['access']
+                    else:
+                      field['softwareAccess'] = "read-write"
+
+    # Harddware access
     for memoryMap in descriptor['component']['memoryMaps']:
       if 'addressBlocks' in memoryMap:
         for addressBlock in memoryMap['addressBlocks']:
