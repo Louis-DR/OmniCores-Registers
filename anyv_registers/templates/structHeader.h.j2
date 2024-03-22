@@ -1,0 +1,99 @@
+#pragma once
+
+#include <stdint.h>
+
+#define __BITFIELD_ATTRIBUTES__ __attribute__((packed, aligned(4)))
+
+{%- filter restructure %}
+
+{§ spacing 5 §}
+
+{%- for memoryMap in component.memoryMaps %}
+{%- for addressBlock in memoryMap.addressBlocks %}
+{%- for register in addressBlock.registers %}
+
+{%- set component_prefix   = component.name~"__" %}
+{%- set block_prefix       = (addressBlock.name|snake|lower)~"__" if memoryMap.addressBlocks is not singleton else "" %}
+{%- set register_full_name = component_prefix ~ block_prefix ~ (register.name|snake|lower) %}
+
+{%- if register.fields is defined %} {%- for field in register.fields %}
+{%- set field_full_name = register_full_name ~ "__" ~ (field.name|snake|lower) %}
+
+{%- if field.enumeratedValues is defined %}
+
+typedef enum {{field_full_name}}__enum {
+  {%- filter align -%} {%- for enumeratedValue in field.enumeratedValues %}
+  {{field_full_name|upper}}__{{enumeratedValue.name|upper}} § = {{enumeratedValue.value|hexadecimal}}, §§
+  {%- endfor %} {% endfilter %}
+} {{field_full_name}}__enum;
+
+{%- endif %} {#- field.enumeratedValues is defined #}
+
+{%- endfor %} {#- for field in register.fields #}
+
+typedef struct {{register_full_name}}__fields {
+  {%- filter align -%} {%- for field in register.fields %}
+  {%- set field_full_name = register_full_name ~ "__" ~ (field.name|snake|lower) %}
+  {%- if field.enumeratedValues is defined %}
+  {{field_full_name}}__enum § {{field.name}} § : § {{field.bitWidth}}; §§
+  {%- else %}
+  uint32_t                  § {{field.name}} § : § {{field.bitWidth}}; §§
+  {%- endif %}
+  {%- endfor %} {% endfilter %}
+} {{register_full_name}}__fields;
+
+typedef union {{register_full_name}}__register {
+  {%- filter align %}
+  uint32_t                       § raw_value;
+  {{register_full_name}}__fields § fields;
+  {%- endfilter %}
+} {{register_full_name}}__register;
+
+{§ spacing 3 §}
+
+{%- else %} {#- register.fields is defined #}
+
+{%- if register.enumeratedValues is defined %}
+
+typedef enum {{register_full_name}}__enum {
+  {%- filter align -%} {%- for enumeratedValue in register.enumeratedValues %}
+  {{register_full_name|upper}}__{{enumeratedValue.name|upper}} § = {{enumeratedValue.value|hexadecimal}}, §§
+  {%- endfor %} {% endfilter %}
+} {{register_full_name}}__enum;
+
+typedef {{register_full_name}}__enum {{register_full_name}}__register;
+
+{§ spacing 3 §}
+
+{%- else %} {#- if register.enumeratedValues is defined #}
+
+typedef uint32_t {{register_full_name}}__register;
+
+{§ spacing 3 §}
+
+{%- endif %} {#- if register.enumeratedValues is defined #}
+
+{%- endif %} {#- register.fields is defined #}
+
+{%- endfor %} {#- register in addressBlock.registers #}
+{%- endfor %} {#- addressBlock in memoryMap.addressBlocks #}
+{%- endfor %} {#- memoryMap in component.memoryMaps #}
+
+{§ spacing 3 §}
+
+typedef struct {{component.name}} {
+  {%- filter align %}
+  {%- for memoryMap in component.memoryMaps %}
+  {%- for addressBlock in memoryMap.addressBlocks %}
+  {%- for register in addressBlock.registers %}
+  {%- set component_prefix   = component.name~"__" %}
+  {%- set block_prefix       = (addressBlock.name|snake|lower)~"__" if memoryMap.addressBlocks is not singleton else "" %}
+  {%- set register_full_name = component_prefix ~ block_prefix ~ (register.name|snake|lower) %}
+  {{register_full_name}}__register § {{register.name}};
+  {%- endfor %} {#- register in addressBlock.registers #}
+  {%- endfor %} {#- addressBlock in memoryMap.addressBlocks #}
+  {%- endfor %} {#- memoryMap in component.memoryMaps #}
+  {%- endfilter %} {#- align #}
+} {{component.name}};
+
+{%- endfilter %} {#- restructure #}
