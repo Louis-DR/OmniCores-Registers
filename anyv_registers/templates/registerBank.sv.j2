@@ -52,6 +52,20 @@ module {{component.name}} (
 
 {§ spacing 1 §}
 
+// Enumerated values
+{%- filter align -%}
+{%- for memoryMap in component.memoryMaps -%} {% for addressBlock in memoryMap.addressBlocks -%} {%- for register in addressBlock.registers %}
+{%- set block_prefix = (addressBlock.name|snake|lower)~"__" if memoryMap.addressBlocks is not singleton else "" %}
+{%- if register.fields is defined -%} {%- for field in register.fields %} {%- if field.enumeratedValues is defined %} {%- for enumeratedValue in field.enumeratedValues %}
+parameter § {{field.bitWidth|arrsize}} §§ {{block_prefix}}{{register.name|snake|upper}}__{{field.name|snake|upper}}__{{enumeratedValue.name|snake|upper}} § = {{enumeratedValue.value|hexadecimal}}; §§
+{%- endfor -%} {%- endif -%} {%- endfor -%} {%- else %} {%- if register.enumeratedValues is defined %} {%- for enumeratedValue in register.enumeratedValues %}
+parameter § {{register.size|arrsize}}  §§ {{block_prefix}}{{register.name|snake|upper}}__{{enumeratedValue.name|snake|upper}} § = {{enumeratedValue.value|hexadecimal}}; §§
+{%- endfor -%} {%- endif -%} {%- endif -%}
+{%- endfor -%} {%- endfor %} {%- endfor -%}
+{%- endfilter %}
+
+{§ spacing 1 §}
+
 // Registers
 {%- filter align -%}
 {%- for memoryMap in component.memoryMaps -%} {% for addressBlock in memoryMap.addressBlocks -%} {%- for register in addressBlock.registers %}
