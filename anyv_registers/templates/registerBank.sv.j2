@@ -91,10 +91,10 @@ always_ff @(posedge control__pclock or negedge control__presetn) begin
     {%- for memoryMap in component.memoryMaps -%} {%- for addressBlock in memoryMap.addressBlocks -%} {%- for register in addressBlock.registers %}
     {%- set block_prefix = (addressBlock.name|snake|lower)~"__" if memoryMap.addressBlocks is not singleton else "" %}
     {%- if register.fields is defined -%} {%- for field in register.fields -%} {%- if field.reset is defined %}
-    register__{{block_prefix}}{{register.name|snake|lower}}__{{field.name|snake|lower}}__register § <= {{field.reset|hexadecimal}}; §§
+    register__{{block_prefix}}{{register.name|snake|lower}}__{{field.name|snake|lower}}__register § <= {{field.bitWidth}}'h{{field.reset|hexadecimal}}; §§
     {%- endif -%}
     {%- endfor -%} {%- else -%} {%- if register.reset is defined -%}
-    register__{{block_prefix}}{{register.name|snake|lower}}__register                             § <= {{register.reset|hexadecimal}}; §§
+    register__{{block_prefix}}{{register.name|snake|lower}}__register                             § <= {{register.width}}'h{{register.reset|hexadecimal}}; §§
     {%- endif -%} {%- endif -%}
     {%- endfor -%} {%- endfor -%} {%- endfor -%}
     {%- endfilter %}
