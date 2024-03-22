@@ -162,7 +162,10 @@ SOFTWARE.""")
               if 'resets' in field:
                 resets = []
                 if isinstance(field['resets'], dict):
-                  resets = [field['resets']['reset']]
+                  if isinstance(field['resets']['reset'], list):
+                    resets = field['resets']['reset']
+                  else:
+                    resets = [field['resets']['reset']]
                 elif isinstance(field['resets'], list):
                   resets = field['resets']
                 else: raise Exception()
@@ -172,7 +175,10 @@ SOFTWARE.""")
               if 'fieldAccessPolicies' in field:
                 fieldAccessPolicies = []
                 if isinstance(field['fieldAccessPolicies'], dict):
-                  fieldAccessPolicies = [field['fieldAccessPolicies']['fieldAccessPolicy']]
+                  if isinstance(field['fieldAccessPolicies']['fieldAccessPolicy'],list):
+                    fieldAccessPolicies = field['fieldAccessPolicies']['fieldAccessPolicy']
+                  else:
+                    fieldAccessPolicies = [field['fieldAccessPolicies']['fieldAccessPolicy']]
                 elif isinstance(field['fieldAccessPolicies'], list):
                   fieldAccessPolicies = field['fieldAccessPolicies']
                 else: raise Exception()
@@ -182,7 +188,10 @@ SOFTWARE.""")
               if 'enumeratedValues' in field:
                 enumeratedValues = []
                 if isinstance(field['enumeratedValues'], dict):
-                  enumeratedValues = [field['enumeratedValues']['enumeratedValue']]
+                  if isinstance(field['enumeratedValues']['enumeratedValue'],list):
+                    enumeratedValues = field['enumeratedValues']['enumeratedValue']
+                  else:
+                    enumeratedValues = [field['enumeratedValues']['enumeratedValue']]
                 elif isinstance(field['enumeratedValues'], list):
                   enumeratedValues = field['enumeratedValues']
                 else: raise Exception()
