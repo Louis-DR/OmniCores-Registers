@@ -1,1 +1,1 @@
-# AnyV-Registers - Hardware register bank generator
+# OmniCores Registers - Hardware register bank generator

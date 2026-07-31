@@ -1,0 +1,54 @@
+[build-system]
+requires      = ["setuptools>=61.0", "setuptools_scm>=8.0"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools_scm]
+root = ""
+
+[project]
+name        = "omnicores-registers"
+description = "Hardware register bank generator."
+readme      = "README.md"
+authors     = [{ name = "Louis Duret-Robert", email = "louisduret@gmail.com" }]
+license     = { text = "MIT" }
+keywords    = [
+  "hardware",
+  "semiconductor",
+  "microelectronics",
+  "ASIC",
+  "FPGA",
+  "Verilog",
+  "SystemVerilog",
+  "register",
+  "IPXact",
+  "SystemRDL",
+]
+classifiers = [
+  "Programming Language :: Python :: 3",
+  "Operating System :: OS Independent",
+]
+dynamic = ["version"]
+requires-python = ">=3.10"
+dependencies = [
+  "j2gpp>=4.0",
+  "j2gpp_verilog",
+  "PyYAML>=6.0",
+]
+
+# Only required for CLI tool
+[project.scripts]
+omnicores-registers = "omnicores_register.cli:main"
+
+[project.urls]
+"Homepage" = "https://github.com/Louis-DR/OmniCores-Registers"
+
+[tool.setuptools]
+license-files = ["LICENSE"]
+
+[tool.setuptools.packages.find]
+where   = ["."]
+include = ["omnicores_register*"]
+
+# Only required to bundle templates with tool
+[tool.setuptools.package-data]
+omnicores_register = ["templates/**/*.j2"]
