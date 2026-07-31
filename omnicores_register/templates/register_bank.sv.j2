@@ -1,0 +1,162 @@
+// ╔═══════════════════════════════════════════════════════════════════════════╗
+// ║ Project:     OmniCores-Registers                                          ║
+// ║ Author:      Louis Duret-Robert - louisduret@gmail.com                    ║
+// ║ Website:     louis-dr.github.io                                           ║
+// ║ License:     MIT License                                                  ║{{header_warning_generated_file}}{#
+// ╟───────────────────────────────────────────────────────────────────────────╢
+// ║ Template:    This is a Jinja2 template using J2GPP and J2GPP extensions.  ║
+// ║              It is rendered by the OmniCores-Registers tool.              ║#}
+// ╟───────────────────────────────────────────────────────────────────────────╢
+// ║ Description: Generated register bank containing the register storage and  ║
+// ║              software and hardware access logic.                          ║
+// ╚═══════════════════════════════════════════════════════════════════════════╝
+
+
+
+{% filter restructure %}
+module {{register_bank.name}}__register_bank (
+{% filter remove_blank_lines -%}
+{% filter remove_last_comma -%}
+{% filter autoformat_module_ports %}
+
+  // Control interface
+  input  logic        control__pclock,
+  input  logic        control__preset_n,
+  input  logic        control__psel,
+  input  logic        control__penable,
+  output logic        control__pready,
+  input  logic [31:0] control__paddr,
+  input  logic        control__pwrite,
+  input  logic [31:0] control__pwdata,
+  output logic [31:0] control__prdata,
+
+  // Registers
+  {% for register in register_bank.registers %}
+  output logic {{register.width|arr}} register__{{register.name}},
+  {% endfor %} {#- registers #}
+
+{%- endfilter %} {#- autoformat_module_ports #}
+{%- endfilter %} {#- remove_last_comma #}
+{%- endfilter %} {#- remove_blank_lines #}
+);
+
+
+
+  {§ spacing 3 §}
+
+
+
+  // Registers
+  {%- filter autoformat_signal_definitions %}
+  {% for register in register_bank.registers %}
+  logic {{register.width|arr}} register__{{register.name}}__storage;
+  {%- endfor %} {#- registers #}
+  {%- endfilter %} {#- autoformat_signal_definitions #}
+
+
+
+  {§ spacing 3 §}
+
+
+
+  // Reset and write
+  always_ff @(posedge control__pclock or negedge control__preset_n) begin
+
+    {§ spacing 1 §}
+
+    // Reset
+    if (!control__preset_n) begin
+      {%- filter align %}
+      {%- for register in register_bank.registers %}
+      register__{{register.name}}__storage § <= {{register.width}}'h0; §§
+      {%- endfor %} {#- registers #}
+      {%- endfilter %} {#- align #}
+    end
+
+    {§ spacing 1 §}
+
+    // Software write
+    else if (   control__psel
+             && control__penable
+             && control__pwrite ) begin
+      case (control__paddr)
+        {%- filter align %}
+        {%- for register in register_bank.registers %}
+        32'h{{register.address|hexadecimal}} § : register__{{register.name}}__storage § <= control__pwdata § [{{register.width-1}}:0]; §§
+        {%- endfor %} {#- registers #}
+        {%- endfilter %} {#- align #}
+      endcase
+    end
+
+    {§ spacing 1 §}
+
+  end
+
+
+
+  {§ spacing 3 §}
+
+
+
+  // Software response and read
+  always_comb begin
+    if (   control__psel
+        && control__penable ) begin
+
+      {§ spacing 1 §}
+
+      // Software response
+      control__pready  = 1'b1;
+
+      {§ spacing 1 §}
+
+      // Software read
+      if (!control__pwrite) begin
+        control__prdata  = 32'd0;
+        case (control__paddr)
+
+          {%- filter align %}
+          {%- for register in register_bank.registers %}
+          32'h{{register.address|hexadecimal}} § : control__prdata § [{{register.width-1}}:0] §§ = register__{{register.name}}__storage;
+          {%- endfor %} {#- registers #}
+          {%- endfilter %} {#- align #}
+          default: begin
+            control__prdata  = 32'd0;
+          end
+        endcase
+      end
+    end
+
+    {§ spacing 1 §}
+
+    // Bus return to zero
+    else begin
+      control__pready  =  1'b0;
+      control__prdata  = 32'd0;
+    end
+
+    {§ spacing 1 §}
+
+  end
+
+
+
+  {§ spacing 3 §}
+
+
+
+  // Hardware read
+  {%- filter align -%}
+  {%- for register in register_bank.registers %}
+  assign register__{{register.name}} § = register__{{register.name}}__storage;
+  {%- endfor %} {#- registers #}
+  {%- endfilter %} {#- align #}
+
+
+
+  {§ spacing 3 §}
+
+
+
+endmodule
+{% endfilter %}
