@@ -180,8 +180,9 @@ module {{register_bank.name}}__register_bank__testbench;
     // Check 1 : Reset values
     $display("CHECK 1 : Reset values.");
     {%- for register in register_bank.registers %}
+    {%- if register.reset_value is not none %}
     {§ spacing 1 §}
-    expected_read_data = 32'h0;
+    expected_read_data = register__{{register.name}}__reset_value;
     {%- if register.is_software_readable() %}
     register_read(register__{{register.name}}__address);
     assert(register_read_data === expected_read_data)
@@ -195,6 +196,7 @@ module {{register_bank.name}}__register_bank__testbench;
     assert(register_read_data === register__{{register.name}})
       else $error("[%t] Different values read by software and software access for '{{register.name}}'. Hardware reads '%0h' but software read '%0h'.", $realtime, register__{{register.name}}, register_read_data);
     {%- endif %} {#- register.is_software_readable and register.is_hardware_readable #}
+    {%- endif %} {#- register.reset_value #}
     {%- endfor %} {#- registers #}
 
     repeat(5) @(negedge control__pclock);
