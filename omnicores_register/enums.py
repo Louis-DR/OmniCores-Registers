@@ -4,11 +4,25 @@
 # ║ Website:     louis-dr.github.io                                           ║
 # ║ License:     MIT License                                                  ║
 # ╟───────────────────────────────────────────────────────────────────────────╢
-# ║ Description: Entry point of the API with the public classes.              ║
+# ║ Description: Enumerated values for the API.                               ║
 # ╚═══════════════════════════════════════════════════════════════════════════╝
 
 
 
-from omnicores_register.register_bank import RegisterBank
-from omnicores_register.register import Register
-from omnicores_register.enums import SoftwareAccessType, HardwareAccessType
+from enum import Enum, auto
+
+
+
+class SoftwareAccessType(Enum):
+  NONE       = auto()
+  READ_ONLY  = auto()
+  WRITE_ONLY = auto()
+  READ_WRITE = auto()
+
+
+
+class HardwareAccessType(Enum):
+  NONE       = auto()
+  READ_ONLY  = auto()
+  WRITE_ONLY = auto()
+  READ_WRITE = auto()
