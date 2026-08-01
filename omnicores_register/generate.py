@@ -66,3 +66,4 @@ def generate(self):
 
   # Render each templates
   render_template(render_engine, template_folder / 'register_bank.sv.j2', output_folder/ f'{register_bank_name}.sv')
+  render_template(render_engine, template_folder / 'package.sv.j2',       output_folder/ f'{register_bank_name}.package.sv')

@@ -1,0 +1,38 @@
+// ╔═══════════════════════════════════════════════════════════════════════════╗
+// ║ Project:     OmniCores-Registers                                          ║
+// ║ Author:      Louis Duret-Robert - louisduret@gmail.com                    ║
+// ║ Website:     louis-dr.github.io                                           ║
+// ║ License:     MIT License                                                  ║{{header_warning_generated_file}}{#
+// ╟───────────────────────────────────────────────────────────────────────────╢
+// ║ Template:    This is a Jinja2 template using J2GPP and J2GPP extensions.  ║
+// ║              It is rendered by the OmniCores-Registers tool.              ║#}
+// ╟───────────────────────────────────────────────────────────────────────────╢
+// ║ Description: Generated package for the register bank with info about each ║
+// ║              register.                                                    ║
+// ╚═══════════════════════════════════════════════════════════════════════════╝
+
+
+
+{% filter restructure %}
+package {{register_bank.name}}__register_bank__package;
+
+
+
+  {§ spacing 3 §}
+
+
+
+  {%- filter align %}
+  {%- for register in register_bank.registers %}
+  localparam logic [31:0] register__{{register.name}}__address § = 32'h{{register.address|hexadecimal}};
+  {%- endfor %} {#- registers #}
+  {%- endfilter %} {#- align #}
+
+
+
+  {§ spacing 3 §}
+
+
+
+endpackage
+{% endfilter %}
