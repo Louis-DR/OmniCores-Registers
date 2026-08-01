@@ -1,0 +1,231 @@
+// ╔═══════════════════════════════════════════════════════════════════════════╗
+// ║ Project:     OmniCores-Registers                                          ║
+// ║ Author:      Louis Duret-Robert - louisduret@gmail.com                    ║
+// ║ Website:     louis-dr.github.io                                           ║
+// ║ License:     MIT License                                                  ║{{header_warning_generated_file}}{#
+// ╟───────────────────────────────────────────────────────────────────────────╢
+// ║ Template:    This is a Jinja2 template using J2GPP and J2GPP extensions.  ║
+// ║              It is rendered by the OmniCores-Registers tool.              ║#}
+// ╟───────────────────────────────────────────────────────────────────────────╢
+// ║ Description: Generated testbench for the register bank to confirm correct ║
+// ║              operation.                                                   ║
+// ╚═══════════════════════════════════════════════════════════════════════════╝
+
+
+
+{% filter restructure %}
+module {{register_bank.name}}__register_bank__testbench;
+  import {{register_bank.name}}__register_bank__package::*;
+
+
+
+  {§ spacing 3 §}
+
+
+
+  // Test parameters
+  localparam real CLOCK_PERIOD = 10;
+
+
+
+  {§ spacing 3 §}
+
+
+
+  // Control interface
+  logic        control__pclock;
+  logic        control__preset_n;
+  logic        control__psel;
+  logic        control__penable;
+  logic        control__pready;
+  logic [31:0] control__paddr;
+  logic        control__pwrite;
+  logic [31:0] control__pwdata;
+  logic [31:0] control__prdata;
+
+  // Control clock generation
+  initial begin
+    control__pclock = 0;
+    forever begin
+      #(CLOCK_PERIOD/2) control__pclock = ~control__pclock;
+    end
+  end
+
+  // Write task
+  task automatic register_write;
+    input logic [31:0] address;
+    input logic [31:0] data;
+    control__psel    = 1;
+    control__penable = 0;
+    control__pwrite  = 1;
+    control__paddr   = address;
+    control__pwdata  = data;
+    @(negedge control__pclock);
+    control__penable = 1;
+    while (!control__pready) @(negedge control__pclock);
+    control__psel    =  0;
+    control__penable = 'x;
+    control__pwrite  = 'x;
+    control__paddr   = 'x;
+    control__pwdata  = 'x;
+  endtask
+
+  // Read task
+  logic [31:0] register_read_data;
+  logic [31:0] expected_read_data;
+  task automatic register_read;
+    input logic [31:0] address;
+    control__psel    = 1;
+    control__penable = 0;
+    control__pwrite  = 0;
+    control__paddr   = address;
+    @(negedge control__pclock);
+    control__penable = 1;
+    while (!control__pready) @(negedge control__pclock);
+    register_read_data = control__prdata;
+    control__psel    =  0;
+    control__penable = 'x;
+    control__pwrite  = 'x;
+    control__paddr   = 'x;
+  endtask
+
+
+
+  {§ spacing 3 §}
+
+
+
+  // Registers
+  {%- filter autoformat_signal_definitions %}
+  {% for register in register_bank.registers %}
+  logic {{register.width|arr}} register__{{register.name}};
+  {%- endfor %} {#- registers #}
+  {%- endfilter %} {#-autoformat_signal_definitions #}
+
+  // Register bank under test
+  {{register_bank.name}}__register_bank {{register_bank.name}}__register_bank__dut (
+    {% filter remove_blank_lines -%}
+    {% filter remove_last_comma -%}
+    {% filter autoformat_instance_ports -%}
+
+    // Control interface
+    .control__pclock   ( control__pclock   ),
+    .control__preset_n ( control__preset_n ),
+    .control__psel     ( control__psel     ),
+    .control__penable  ( control__penable  ),
+    .control__pready   ( control__pready   ),
+    .control__paddr    ( control__paddr    ),
+    .control__pwrite   ( control__pwrite   ),
+    .control__pwdata   ( control__pwdata   ),
+    .control__prdata   ( control__prdata   ),
+
+    // Registers
+    {% for register in register_bank.registers %}
+    .register__{{register.name}} ( register__{{register.name}} ),
+    {% endfor %} {#- registers #}
+
+    {%- endfilter %} {#- autoformat_instance_ports #}
+    {%- endfilter %} {#- remove_last_comma #}
+    {%- endfilter %} {#- remove_blank_lines #}
+  );
+
+
+
+  {§ spacing 3 §}
+
+
+
+  // Main block
+  initial begin
+    // Log waves
+    $dumpfile("{{register_bank.name}}__register_bank.testbench.vcd");
+    $dumpvars(0, {{register_bank.name}}__register_bank__testbench);
+    $timeformat(-9, 0, " ns", 0);
+
+
+    // Initialization
+    control__psel = 0;
+
+    // Reset
+    control__preset_n = 0;
+    @(negedge control__pclock);
+    control__preset_n = 1;
+
+
+    repeat(5) @(negedge control__pclock);
+
+
+    {§ spacing 2 §}
+
+
+    // Check 1 : Reset values
+    $display("CHECK 1 : Reset values.");
+    {% for register in register_bank.registers %}
+    register_read(register__{{register.name}}__address);
+    expected_read_data = 32'h0;
+    assert(register_read_data === expected_read_data)
+      else $error("[%t] Incorrect reset value read by software access for register '{{register.name}}'. Expected '%0h' but got '%0h' instead.", $realtime, expected_read_data, register_read_data);
+    assert(register__{{register.name}} === expected_read_data)
+      else $error("[%t] Incorrect reset value read by hardware access for register '{{register.name}}'. Expected '%0h' but got '%0h' instead.", $realtime, expected_read_data, register__{{register.name}});
+    assert(register_read_data === register__{{register.name}})
+      else $error("[%t] Different values read by software and software access for '{{register.name}}'. Hardware reads '%0h' but software read '%0h'.", $realtime, register__{{register.name}}, register_read_data);
+    {% endfor %} {#- registers #}
+
+    repeat(5) @(negedge control__pclock);
+
+
+    {§ spacing 2 §}
+
+
+    // Check 2 : Write all ones
+    $display("CHECK 2 : Write all ones.");
+    {% for register in register_bank.registers %}
+    register_write(register__{{register.name}}__address, '1);
+    register_read (register__{{register.name}}__address);
+    expected_read_data = { {{register.width}} {1'b1}};
+    assert(register_read_data === expected_read_data)
+      else $error("[%t] Incorrect value read by software access after writing all ones for register '{{register.name}}'. Expected '%0h' but got '%0h' instead.", $realtime, expected_read_data, register_read_data);
+    assert(register__{{register.name}} === expected_read_data)
+      else $error("[%t] Incorrect value read by hardware access after writing all ones for register '{{register.name}}'. Expected '%0h' but got '%0h' instead.", $realtime, expected_read_data, register__{{register.name}});
+    assert(register_read_data === register__{{register.name}})
+      else $error("[%t] Different values read by software and software access for '{{register.name}}'. Hardware reads '%0h' but software read '%0h'.", $realtime, register__{{register.name}}, register_read_data);
+    {% endfor %} {#- registers #}
+
+    repeat(5) @(negedge control__pclock);
+
+
+    {§ spacing 2 §}
+
+
+    // Check 3 : Write all zeros
+    $display("CHECK 3 : Write all zeros.");
+    {% for register in register_bank.registers %}
+    register_write(register__{{register.name}}__address, '0);
+    register_read (register__{{register.name}}__address);
+    expected_read_data = { {{register.width}} {1'b0}};
+    assert(register_read_data === expected_read_data)
+      else $error("[%t] Incorrect value read by software access after writing all zeros for register '{{register.name}}'. Expected '%0h' but got '%0h' instead.", $realtime, expected_read_data, register_read_data);
+    assert(register__{{register.name}} === expected_read_data)
+      else $error("[%t] Incorrect value read by hardware access after writing all zeros for register '{{register.name}}'. Expected '%0h' but got '%0h' instead.", $realtime, expected_read_data, register__{{register.name}});
+    assert(register_read_data === register__{{register.name}})
+      else $error("[%t] Different values read by software and software access for '{{register.name}}'. Hardware reads '%0h' but software read '%0h'.", $realtime, register__{{register.name}}, register_read_data);
+    {% endfor %} {#- registers #}
+
+    repeat(5) @(negedge control__pclock);
+
+
+    {§ spacing 2 §}
+
+
+    // End of test
+    $finish;
+  end
+
+
+
+  {§ spacing 3 §}
+
+
+
+endmodule
+{% endfilter %}
