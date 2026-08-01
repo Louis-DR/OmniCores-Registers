@@ -31,9 +31,15 @@ module {{register_bank.name}}__register_bank (
   output logic [31:0] control__prdata,
 
   // Registers
-  {% for register in register_bank.registers %}
+  {%- for register in register_bank.registers %}
+  {%- if register.is_hardware_readable() %}
   output logic {{register.width|arr}} register__{{register.name}},
-  {% endfor %} {#- registers #}
+  {%- endif %} {#- register.is_hardware_readable #}
+  {%- if register.is_hardware_writable() %}
+  input  logic                        register__{{register.name}}__hw_write_enable,
+  input  logic {{register.width|arr}} register__{{register.name}}__hw_write_data,
+  {%- endif %} {#- register.is_hardware_writable #}
+  {%- endfor %} {#- registers #}
 
 {%- endfilter %} {#- autoformat_module_ports #}
 {%- endfilter %} {#- remove_last_comma #}
@@ -82,11 +88,24 @@ module {{register_bank.name}}__register_bank (
       case (control__paddr)
         {%- filter align %}
         {%- for register in register_bank.registers %}
+        {%- if register.is_software_writable() %}
         32'h{{register.address|hexadecimal}} § : register__{{register.name}}__storage § <= control__pwdata § [{{register.width-1}}:0]; §§
+        {%- endif %} {#- register.is_software_writable #}
         {%- endfor %} {#- registers #}
         {%- endfilter %} {#- align #}
       endcase
     end
+
+    {§ spacing 1 §}
+
+    // Hardware write
+    {%- filter align %}
+    {%- for register in register_bank.registers %}
+    {%- if register.is_hardware_writable() %}
+    if (register__{{register.name}}__hw_write_enable) § register__{{register.name}}__storage § <= register__{{register.name}}__hw_write_data;
+    {%- endif %} {#- register.is_hardware_writable #}
+    {%- endfor %} {#- registers #}
+    {%- endfilter %} {#- align #}
 
     {§ spacing 1 §}
 
@@ -117,7 +136,9 @@ module {{register_bank.name}}__register_bank (
 
           {%- filter align %}
           {%- for register in register_bank.registers %}
+          {%- if register.is_software_readable() %}
           32'h{{register.address|hexadecimal}} § : control__prdata § [{{register.width-1}}:0] §§ = register__{{register.name}}__storage;
+          {%- endif %} {#- register.is_software_readable #}
           {%- endfor %} {#- registers #}
           {%- endfilter %} {#- align #}
           default: begin
