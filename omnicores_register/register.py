@@ -9,6 +9,7 @@
 
 
 
+from typing import Optional
 from omnicores_register.enums import SoftwareAccessType, HardwareAccessType
 
 
@@ -18,12 +19,14 @@ class Register:
       self,
       name            : str,
       width           : int                = 32,
+      reset_value     : Optional[int]      = 0,
       software_access : SoftwareAccessType = SoftwareAccessType.READ_WRITE,
       hardware_access : HardwareAccessType = HardwareAccessType.READ_ONLY,
     ):
     self.name            = name
     self.width           = width
     self.address         = None
+    self.reset_value     = reset_value
     self.software_access = software_access
     self.hardware_access = hardware_access
 
