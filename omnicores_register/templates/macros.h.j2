@@ -1,0 +1,43 @@
+// ╔═══════════════════════════════════════════════════════════════════════════╗
+// ║ Project:     OmniCores-Registers                                          ║
+// ║ Author:      Louis Duret-Robert - louisduret@gmail.com                    ║
+// ║ Website:     louis-dr.github.io                                           ║
+// ║ License:     MIT License                                                  ║{{header_warning_generated_file}}{#
+// ╟───────────────────────────────────────────────────────────────────────────╢
+// ║ Template:    This is a Jinja2 template using J2GPP and J2GPP extensions.  ║
+// ║              It is rendered by the OmniCores-Registers tool.              ║#}
+// ╟───────────────────────────────────────────────────────────────────────────╢
+// ║ Description: Generated C header file for the register bank with macros    ║
+// ║              for each register.                                           ║
+// ╚═══════════════════════════════════════════════════════════════════════════╝
+
+
+
+{% filter restructure %}
+#ifndef _{{register_bank.name|upper}}__REGISTER_BANK__MACROS_HEADER_
+#define _{{register_bank.name|upper}}__REGISTER_BANK__MACROS_HEADER_
+
+
+{§ spacing 3 §}
+
+
+
+{%- filter align %}
+{%- for register in register_bank.registers %}
+#define {{register_bank.name|upper}}__{{register.name|upper}}__ADDRESS § 0x{{register.address|hexadecimal}} §§
+#define {{register_bank.name|upper}}__{{register.name|upper}}__WIDTH § {{register.width}} §§
+#define {{register_bank.name|upper}}__{{register.name|upper}}__MASK § 0x{{(2**register.width-1)|hexadecimal}} §§
+{%- if register.reset_value is not none %}
+#define {{register_bank.name|upper}}__{{register.name|upper}}__RESET_VALUE § 0x{{register.reset_value|hexadecimal}} §§
+{%- endif %} {#- register.reset_value #}
+{%  endfor %} {#- registers #}
+{%- endfilter %} {#- align #}
+
+
+
+{§ spacing 3 §}
+
+
+
+#endif
+{% endfilter %} {#- restructure #}

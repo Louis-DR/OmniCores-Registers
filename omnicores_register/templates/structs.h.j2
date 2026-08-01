@@ -1,0 +1,53 @@
+// ╔═══════════════════════════════════════════════════════════════════════════╗
+// ║ Project:     OmniCores-Registers                                          ║
+// ║ Author:      Louis Duret-Robert - louisduret@gmail.com                    ║
+// ║ Website:     louis-dr.github.io                                           ║
+// ║ License:     MIT License                                                  ║{{header_warning_generated_file}}{#
+// ╟───────────────────────────────────────────────────────────────────────────╢
+// ║ Template:    This is a Jinja2 template using J2GPP and J2GPP extensions.  ║
+// ║              It is rendered by the OmniCores-Registers tool.              ║#}
+// ╟───────────────────────────────────────────────────────────────────────────╢
+// ║ Description: Generated C header file for the register bank with structs   ║
+// ║              of the register map.                                         ║
+// ╚═══════════════════════════════════════════════════════════════════════════╝
+
+
+
+{% filter restructure %}
+#ifndef _{{register_bank.name|upper}}__REGISTER_BANK__STRUCTS_HEADER_
+#define _{{register_bank.name|upper}}__REGISTER_BANK__STRUCTS_HEADER_
+
+#define _STRUCT_ATTRIBUTES_ __attribute__((packed, aligned(4)))
+
+#include <stdint.h>
+
+
+
+{§ spacing 3 §}
+
+
+
+typedef struct {{register_bank.name}}__register_bank {
+  {%- filter align %}
+  {%- set reserved_accumulator = Accumulator() %}
+  {%- for register in register_bank.registers %}
+  {%- if register.is_software_readable() or register.is_software_writable() %}
+  {%- if register.sw_struct_padding > 0 %}
+  § uint32_t § _reserved{{reserved_accumulator.increment_after()}}_[{{register.sw_struct_padding}}];
+  {%- endif %} {#- register.sw_struct_padding#}
+  volatile {% if not register.is_software_writable() %}const{% endif %} § uint32_t § {{register.name}};
+  {%- endif %} {#- register.is_software_accessible #}
+  {%- endfor %} {#- registers #}
+  {%- endfilter %} {#- align #}
+} _STRUCT_ATTRIBUTES_ {{register_bank.name}};
+
+
+
+{§ spacing 3 §}
+
+
+
+#undef _STRUCT_ATTRIBUTES_
+
+#endif
+{% endfilter %} {#- restructure #}

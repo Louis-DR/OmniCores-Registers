@@ -68,3 +68,5 @@ def generate(self):
   render_template(render_engine, template_folder / 'register_bank.sv.j2', output_folder/ f'{register_bank_name}.sv')
   render_template(render_engine, template_folder / 'package.sv.j2',       output_folder/ f'{register_bank_name}.package.sv')
   render_template(render_engine, template_folder / 'testbench.sv.j2',     output_folder/ f'{register_bank_name}.testbench.sv')
+  render_template(render_engine, template_folder / 'macros.h.j2',         output_folder/ f'{register_bank_name}.macros.h')
+  render_template(render_engine, template_folder / 'structs.h.j2',        output_folder/ f'{register_bank_name}.structs.h')

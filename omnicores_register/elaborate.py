@@ -12,7 +12,7 @@
 
 def elaborate(self):
   """Elaborate the data structure after configuration and before generation."""
-  # Compute address offset of each register
+  # Address offset of each register
   running_address = 0
   for register in self.registers:
     if register.offset is None:
@@ -21,3 +21,10 @@ def elaborate(self):
       register.address = register.offset
       running_address  = register.offset
     running_address += 4
+
+  # Padding before each register for firmware struct header
+  previous_address = -4
+  for register in self.registers:
+    if register.is_software_readable() or register.is_software_writable():
+      register.sw_struct_padding = (register.address - previous_address - 4) // 4
+      previous_address = register.address
