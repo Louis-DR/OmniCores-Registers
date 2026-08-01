@@ -15,5 +15,9 @@ def elaborate(self):
   # Compute address offset of each register
   running_address = 0
   for register in self.registers:
-    register.address = running_address
+    if register.offset is None:
+      register.address = running_address
+    else:
+      register.address = register.offset
+      running_address  = register.offset
     running_address += 4
