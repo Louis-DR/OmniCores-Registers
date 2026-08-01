@@ -74,7 +74,9 @@ module {{register_bank.name}}__register_bank (
     if (!control__preset_n) begin
       {%- filter align %}
       {%- for register in register_bank.registers %}
-      register__{{register.name}}__storage § <= {{register.width}}'h0; §§
+      {%- if register.reset_value is not none %}
+      register__{{register.name}}__storage § <= § {{register.width}}'h{{register.reset_value|hexadecimal}}; §§
+      {%- endif %} {#- register.reset_value #}
       {%- endfor %} {#- registers #}
       {%- endfilter %} {#- align #}
     end
