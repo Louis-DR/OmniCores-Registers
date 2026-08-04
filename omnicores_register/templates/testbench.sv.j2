@@ -71,8 +71,14 @@ module {{register_bank.name}}__register_bank__testbench;
   endtask
 
   // Read task
-  logic [31:0] register_read_data;
-  logic [31:0] expected_read_data;
+  logic [31:0] expected_data;
+  logic [31:0] register_sw_read_data;
+  logic [31:0] register_sw_write_data;
+  logic [31:0] field_sw_read_data;
+  logic [31:0] register_hw_read_data;
+  logic [31:0] register_hw_write_data;
+  logic [31:0] field_hw_read_data;
+  logic [31:0] field_hw_write_data;
   task automatic register_read;
     input logic [31:0] address;
     control__psel    = 1;
@@ -82,7 +88,7 @@ module {{register_bank.name}}__register_bank__testbench;
     @(negedge control__pclock);
     control__penable = 1;
     while (!control__pready) @(negedge control__pclock);
-    register_read_data = control__prdata;
+    register_sw_read_data = control__prdata;
     control__psel    =  0;
     control__penable = 'x;
     control__pwrite  = 'x;
@@ -98,6 +104,15 @@ module {{register_bank.name}}__register_bank__testbench;
   // Registers
   {%- filter autoformat_signal_definitions %}
   {%  for register in register_bank.registers %}
+  {%- if register.fields %} {%- for field in register.fields %}
+  {%- if field.is_hardware_readable() %}
+  logic {{field.width|arr}} register__{{register.name}}__{{field.name}};
+  {%- endif %} {#- field.is_hardware_readable #}
+  {%- if field.is_hardware_writable() %}
+  logic                     register__{{register.name}}__{{field.name}}__hw_write_enable;
+  logic {{field.width|arr}} register__{{register.name}}__{{field.name}}__hw_write_data;
+  {%- endif %} {#- field.is_hardware_writable #}
+  {%- endfor %} {%- else %} {#- fields #}
   {%- if register.is_hardware_readable() %}
   logic {{register.width|arr}} register__{{register.name}};
   {%- endif %} {#- register.is_hardware_readable #}
@@ -105,6 +120,7 @@ module {{register_bank.name}}__register_bank__testbench;
   logic                        register__{{register.name}}__hw_write_enable;
   logic {{register.width|arr}} register__{{register.name}}__hw_write_data;
   {%- endif %} {#- register.is_hardware_writable #}
+  {%- endif %} {#- fields #}
   {%- endfor %} {#- registers #}
   {%- endfilter %} {#-autoformat_signal_definitions #}
 
@@ -127,13 +143,23 @@ module {{register_bank.name}}__register_bank__testbench;
 
     // Registers
     {%- for register in register_bank.registers %}
+    {%- if register.fields %} {%- for field in register.fields %}
+    {%- if field.is_hardware_readable() %}
+    .register__{{register.name}}__{{field.name}} ( register__{{register.name}}__{{field.name}} ),
+    {%- endif %} {#- field.is_hardware_readable #}
+    {%- if field.is_hardware_writable() %}
+    .register__{{register.name}}__{{field.name}}__hw_write_enable ( register__{{register.name}}__{{field.name}}__hw_write_enable ),
+    .register__{{register.name}}__{{field.name}}__hw_write_data ( register__{{register.name}}__{{field.name}}__hw_write_data ),
+    {%- endif %} {#- field.is_hardware_writable #}
+    {%- endfor %} {%- else %} {#- fields #}
     {%- if register.is_hardware_readable() %}
-    .register__{{register.name}}                  ( register__{{register.name}}                  ),
+    .register__{{register.name}} ( register__{{register.name}} ),
     {%- endif %} {#- register.is_hardware_readable #}
     {%- if register.is_hardware_writable() %}
     .register__{{register.name}}__hw_write_enable ( register__{{register.name}}__hw_write_enable ),
-    .register__{{register.name}}__hw_write_data   ( register__{{register.name}}__hw_write_data   ),
+    .register__{{register.name}}__hw_write_data ( register__{{register.name}}__hw_write_data ),
     {%- endif %} {#- register.is_hardware_writable #}
+    {%- endif %} {#- fields #}
     {%- endfor %} {#- registers #}
 
     {%- endfilter %} {#- autoformat_instance_ports #}
@@ -159,9 +185,15 @@ module {{register_bank.name}}__register_bank__testbench;
     control__psel = 0;
     {%- filter align %}
     {%- for register in register_bank.registers %}
+    {%- if register.fields %} {%- for field in register.fields %}
+    {%- if field.is_hardware_writable() %}
+    register__{{register.name}}__{{field.name}}__hw_write_enable § = 0;
+    {%- endif %} {#- field.is_hardware_writable #}
+    {%- endfor %} {%- else %} {#- fields #}
     {%- if register.is_hardware_writable() %}
     register__{{register.name}}__hw_write_enable § = 0;
     {%- endif %} {#- register.is_hardware_writable #}
+    {%- endif %} {#- fields #}
     {%- endfor %} {#- registers #}
     {%- endfilter %} {#- align #}
 
@@ -180,23 +212,46 @@ module {{register_bank.name}}__register_bank__testbench;
     // Check 1 : Reset values
     $display("CHECK 1 : Reset values.");
     {%- for register in register_bank.registers %}
+    {%- if register.fields %} {%- for field in register.fields %}
+    {%- if field.reset_value is not none %}
+    {§ spacing 1 §}
+    expected_data = register__{{register.name}}__{{field.name}}__reset_value;
+    {%- if field.is_software_readable() %}
+    register_read(register__{{register.name}}__address);
+    field_sw_read_data = (register_sw_read_data & register__{{register.name}}__{{field.name}}__mask) >> register__{{register.name}}__{{field.name}}__offset;
+    assert(field_sw_read_data === expected_data)
+      else $error("[%t] Incorrect reset value read by software access for register field '{{register.name}}.{{field.name}}'. Expected '%0h' but got '%0h' instead.", $realtime, expected_data, field_sw_read_data);
+    {%- endif %} {#- field.is_software_readable #}
+    {%- if field.is_hardware_readable() %}
+    field_hw_read_data = register__{{register.name}}__{{field.name}};
+    assert(field_hw_read_data === expected_data)
+      else $error("[%t] Incorrect reset value read by hardware access for register field '{{register.name}}.{{field.name}}'. Expected '%0h' but got '%0h' instead.", $realtime, expected_data, field_hw_read_data);
+    {%- endif %} {#- field.is_hardware_readable #}
+    {%- if field.is_software_readable() and field.is_hardware_readable() %}
+    assert(field_hw_read_data === field_sw_read_data)
+      else $error("[%t] Different values read by software and software access for register field '{{register.name}}.{{field.name}}'. Hardware reads '%0h' but software read '%0h'.", $realtime, field_hw_read_data, field_sw_read_data);
+    {%- endif %} {#- field.is_software_readable and field.is_hardware_readable #}
+    {%- endif %} {#- field.reset_value #}
+    {%- endfor %} {%- else %} {#- fields #}
     {%- if register.reset_value is not none %}
     {§ spacing 1 §}
-    expected_read_data = register__{{register.name}}__reset_value;
+    expected_data = register__{{register.name}}__reset_value;
     {%- if register.is_software_readable() %}
     register_read(register__{{register.name}}__address);
-    assert(register_read_data === expected_read_data)
-      else $error("[%t] Incorrect reset value read by software access for register '{{register.name}}'. Expected '%0h' but got '%0h' instead.", $realtime, expected_read_data, register_read_data);
+    assert(register_sw_read_data === expected_data)
+      else $error("[%t] Incorrect reset value read by software access for register '{{register.name}}'. Expected '%0h' but got '%0h' instead.", $realtime, expected_data, register_sw_read_data);
     {%- endif %} {#- register.is_software_readable #}
     {%- if register.is_hardware_readable() %}
-    assert(register__{{register.name}} === expected_read_data)
-      else $error("[%t] Incorrect reset value read by hardware access for register '{{register.name}}'. Expected '%0h' but got '%0h' instead.", $realtime, expected_read_data, register__{{register.name}});
+    register_hw_read_data = register__{{register.name}};
+    assert(register_hw_read_data === expected_data)
+      else $error("[%t] Incorrect reset value read by hardware access for register '{{register.name}}'. Expected '%0h' but got '%0h' instead.", $realtime, expected_data, register_hw_read_data);
     {%- endif %} {#- register.is_hardware_readable #}
     {%- if register.is_software_readable() and register.is_hardware_readable() %}
-    assert(register_read_data === register__{{register.name}})
-      else $error("[%t] Different values read by software and software access for '{{register.name}}'. Hardware reads '%0h' but software read '%0h'.", $realtime, register__{{register.name}}, register_read_data);
+    assert(register_hw_read_data === register_sw_read_data)
+      else $error("[%t] Different values read by software and software access for register '{{register.name}}'. Hardware reads '%0h' but software read '%0h'.", $realtime, register_hw_read_data, register_sw_read_data);
     {%- endif %} {#- register.is_software_readable and register.is_hardware_readable #}
     {%- endif %} {#- register.reset_value #}
+    {%- endif %} {#- fields #}
     {%- endfor %} {#- registers #}
 
     repeat(5) @(negedge control__pclock);
@@ -208,24 +263,50 @@ module {{register_bank.name}}__register_bank__testbench;
     // Check 2 : Software write all ones
     $display("CHECK 2 : Software write all ones.");
     {%- for register in register_bank.registers %}
+    {%- if register.fields %} {%- for field in register.fields %}
+    {%- if field.is_software_writable() %}
+    {§ spacing 1 §}
+    expected_data = { {{field.width}} {1'b1}};
+    register_sw_write_data = expected_data << register__{{register.name}}__{{field.name}}__offset;
+    register_write(register__{{register.name}}__address, register_sw_write_data);
+    {%- if field.is_software_readable() %}
+    register_read (register__{{register.name}}__address);
+    field_sw_read_data = (register_sw_read_data & register__{{register.name}}__{{field.name}}__mask) >> register__{{register.name}}__{{field.name}}__offset;
+    assert(field_sw_read_data === expected_data)
+      else $error("[%t] Incorrect value read by software access after writing all ones by software for register field '{{register.name}}.{{field.name}}'. Expected '%0h' but got '%0h' instead.", $realtime, expected_data, field_sw_read_data);
+    {%- endif %} {#- field.is_software_readable #}
+    {%- if field.is_hardware_readable() %}
+    field_hw_read_data = register__{{register.name}}__{{field.name}};
+    assert(field_hw_read_data === expected_data)
+      else $error("[%t] Incorrect value read by hardware access after writing all ones by software for register field '{{register.name}}.{{field.name}}'. Expected '%0h' but got '%0h' instead.", $realtime, expected_data, field_hw_read_data);
+    {%- endif %} {#- field.is_hardware_readable #}
+    {%- if field.is_software_readable() and field.is_hardware_readable() %}
+    assert(field_hw_read_data === field_sw_read_data)
+      else $error("[%t] Different values read by software and software access for register field '{{register.name}}.{{field.name}}'. Hardware reads '%0h' but software read '%0h'.", $realtime, field_hw_read_data, field_sw_read_data);
+    {%- endif %} {#- field.is_software_readable and field.is_hardware_readable #}
+    {%- endif %} {#- field.is_software_writable #}
+    {%- endfor %} {%- else %} {#- fields #}
     {%- if register.is_software_writable() %}
     {§ spacing 1 §}
-    expected_read_data = { {{register.width}} {1'b1}};
-    register_write(register__{{register.name}}__address, expected_read_data);
+    expected_data = { {{register.width}} {1'b1}};
+    register_sw_write_data = expected_data;
+    register_write(register__{{register.name}}__address, register_sw_write_data);
     {%- if register.is_software_readable() %}
     register_read (register__{{register.name}}__address);
-    assert(register_read_data === expected_read_data)
-      else $error("[%t] Incorrect value read by software access after writing all ones by software for register '{{register.name}}'. Expected '%0h' but got '%0h' instead.", $realtime, expected_read_data, register_read_data);
+    assert(register_sw_read_data === expected_data)
+      else $error("[%t] Incorrect value read by software access after writing all ones by software for register '{{register.name}}'. Expected '%0h' but got '%0h' instead.", $realtime, expected_data, register_sw_read_data);
     {%- endif %} {#- register.is_software_readable #}
     {%- if register.is_hardware_readable() %}
-    assert(register__{{register.name}} === expected_read_data)
-      else $error("[%t] Incorrect value read by hardware access after writing all ones by software for register '{{register.name}}'. Expected '%0h' but got '%0h' instead.", $realtime, expected_read_data, register__{{register.name}});
+    register_hw_read_data = register__{{register.name}};
+    assert(register_hw_read_data === expected_data)
+      else $error("[%t] Incorrect value read by hardware access after writing all ones by software for register '{{register.name}}'. Expected '%0h' but got '%0h' instead.", $realtime, expected_data, register_hw_read_data);
     {%- endif %} {#- register.is_hardware_readable #}
     {%- if register.is_software_readable() and register.is_hardware_readable() %}
-    assert(register_read_data === register__{{register.name}})
-      else $error("[%t] Different values read by software and software access for '{{register.name}}'. Hardware reads '%0h' but software read '%0h'.", $realtime, register__{{register.name}}, register_read_data);
+    assert(register_hw_read_data === register_sw_read_data)
+      else $error("[%t] Different values read by software and software access for register '{{register.name}}'. Hardware reads '%0h' but software read '%0h'.", $realtime, register_hw_read_data, register_sw_read_data);
     {%- endif %} {#- register.is_software_readable and register.is_hardware_readable #}
     {%- endif %} {#- register.is_software_writable #}
+    {%- endif %} {#- fields #}
     {%- endfor %} {#- registers #}
 
     repeat(5) @(negedge control__pclock);
@@ -237,24 +318,50 @@ module {{register_bank.name}}__register_bank__testbench;
     // Check 3 : Software write all zeros
     $display("CHECK 3 : Software write all zeros.");
     {%- for register in register_bank.registers %}
+    {%- if register.fields %} {%- for field in register.fields %}
+    {%- if field.is_software_writable() %}
+    {§ spacing 1 §}
+    expected_data = { {{field.width}} {1'b0}};
+    register_sw_write_data = expected_data << register__{{register.name}}__{{field.name}}__offset;
+    register_write(register__{{register.name}}__address, register_sw_write_data);
+    {%- if field.is_software_readable() %}
+    register_read (register__{{register.name}}__address);
+    field_sw_read_data = (register_sw_read_data & register__{{register.name}}__{{field.name}}__mask) >> register__{{register.name}}__{{field.name}}__offset;
+    assert(field_sw_read_data === expected_data)
+      else $error("[%t] Incorrect value read by software access after writing all zeros by software for register field '{{register.name}}.{{field.name}}'. Expected '%0h' but got '%0h' instead.", $realtime, expected_data, field_sw_read_data);
+    {%- endif %} {#- field.is_software_readable #}
+    {%- if field.is_hardware_readable() %}
+    field_hw_read_data = register__{{register.name}}__{{field.name}};
+    assert(field_hw_read_data === expected_data)
+      else $error("[%t] Incorrect value read by hardware access after writing all zeros by software for register field '{{register.name}}.{{field.name}}'. Expected '%0h' but got '%0h' instead.", $realtime, expected_data, field_hw_read_data);
+    {%- endif %} {#- field.is_hardware_readable #}
+    {%- if field.is_software_readable() and field.is_hardware_readable() %}
+    assert(field_hw_read_data === field_sw_read_data)
+      else $error("[%t] Different values read by software and software access for register field '{{register.name}}.{{field.name}}'. Hardware reads '%0h' but software read '%0h'.", $realtime, field_hw_read_data, field_sw_read_data);
+    {%- endif %} {#- field.is_software_readable and field.is_hardware_readable #}
+    {%- endif %} {#- field.is_software_writable #}
+    {%- endfor %} {%- else %} {#- fields #}
     {%- if register.is_software_writable() %}
     {§ spacing 1 §}
-    expected_read_data = { {{register.width}} {1'b0}};
-    register_write(register__{{register.name}}__address, expected_read_data);
+    expected_data = { {{register.width}} {1'b0}};
+    register_sw_write_data = expected_data;
+    register_write(register__{{register.name}}__address, register_sw_write_data);
     {%- if register.is_software_readable() %}
     register_read (register__{{register.name}}__address);
-    assert(register_read_data === expected_read_data)
-      else $error("[%t] Incorrect value read by software access after writing all zeros by software for register '{{register.name}}'. Expected '%0h' but got '%0h' instead.", $realtime, expected_read_data, register_read_data);
+    assert(register_sw_read_data === expected_data)
+      else $error("[%t] Incorrect value read by software access after writing all zeros by software for register '{{register.name}}'. Expected '%0h' but got '%0h' instead.", $realtime, expected_data, register_sw_read_data);
     {%- endif %} {#- register.is_software_readable #}
     {%- if register.is_hardware_readable() %}
-    assert(register__{{register.name}} === expected_read_data)
-      else $error("[%t] Incorrect value read by hardware access after writing all zeros by software for register '{{register.name}}'. Expected '%0h' but got '%0h' instead.", $realtime, expected_read_data, register__{{register.name}});
+    register_hw_read_data = register__{{register.name}};
+    assert(register_hw_read_data === expected_data)
+      else $error("[%t] Incorrect value read by hardware access after writing all zeros by software for register '{{register.name}}'. Expected '%0h' but got '%0h' instead.", $realtime, expected_data, register_hw_read_data);
     {%- endif %} {#- register.is_hardware_readable #}
     {%- if register.is_software_readable() and register.is_hardware_readable() %}
-    assert(register_read_data === register__{{register.name}})
-      else $error("[%t] Different values read by software and software access for '{{register.name}}'. Hardware reads '%0h' but software read '%0h'.", $realtime, register__{{register.name}}, register_read_data);
+    assert(register_hw_read_data === register_sw_read_data)
+      else $error("[%t] Different values read by software and software access for register '{{register.name}}'. Hardware reads '%0h' but software read '%0h'.", $realtime, register_hw_read_data, register_sw_read_data);
     {%- endif %} {#- register.is_software_readable and register.is_hardware_readable #}
     {%- endif %} {#- register.is_software_writable #}
+    {%- endif %} {#- fields #}
     {%- endfor %} {#- registers #}
 
     repeat(5) @(negedge control__pclock);
@@ -266,28 +373,58 @@ module {{register_bank.name}}__register_bank__testbench;
     // Check 4 : Hardware write all ones
     $display("CHECK 4 : Hardware write all ones.");
     {%- for register in register_bank.registers %}
+    {%- if register.fields %} {%- for field in register.fields %}
+    {%- if field.is_hardware_writable() %}
+    {§ spacing 1 §}
+    expected_data = { {{field.width}} {1'b1}};
+    field_hw_write_data = expected_data;
+    register__{{register.name}}__{{field.name}}__hw_write_enable = 1;
+    register__{{register.name}}__{{field.name}}__hw_write_data   = field_hw_write_data;
+    @(negedge control__pclock);
+    register__{{register.name}}__{{field.name}}__hw_write_enable =  0;
+    register__{{register.name}}__{{field.name}}__hw_write_data   = 'x;
+    {%- if field.is_software_readable() %}
+    register_read (register__{{register.name}}__address);
+    field_sw_read_data = (register_sw_read_data & register__{{register.name}}__{{field.name}}__mask) >> register__{{register.name}}__{{field.name}}__offset;
+    assert(field_sw_read_data === expected_data)
+      else $error("[%t] Incorrect value read by software access after writing all ones by hardware for register field '{{register.name}}.{{field.name}}'. Expected '%0h' but got '%0h' instead.", $realtime, expected_data, field_sw_read_data);
+    {%- endif %} {#- field.is_software_readable #}
+    {%- if field.is_hardware_readable() %}
+    field_hw_read_data = register__{{register.name}}__{{field.name}};
+    assert(field_hw_read_data === expected_data)
+      else $error("[%t] Incorrect value read by hardware access after writing all ones by hardware for register field '{{register.name}}.{{field.name}}'. Expected '%0h' but got '%0h' instead.", $realtime, expected_data, field_hw_read_data);
+    {%- endif %} {#- field.is_hardware_readable #}
+    {%- if field.is_software_readable() and field.is_hardware_readable() %}
+    assert(field_hw_read_data === field_sw_read_data)
+      else $error("[%t] Different values read by software and software access for register field '{{register.name}}.{{field.name}}'. Hardware reads '%0h' but software read '%0h'.", $realtime, field_hw_read_data, field_sw_read_data);
+    {%- endif %} {#- field.is_software_readable and field.is_hardware_readable #}
+    {%- endif %} {#- field.is_hardware_writable #}
+    {%- endfor %} {%- else %} {#- fields #}
     {%- if register.is_hardware_writable() %}
     {§ spacing 1 §}
-    expected_read_data = { {{register.width}} {1'b1}};
+    expected_data = { {{register.width}} {1'b1}};
+    register_hw_write_data = expected_data;
     register__{{register.name}}__hw_write_enable = 1;
-    register__{{register.name}}__hw_write_data   = expected_read_data;
+    register__{{register.name}}__hw_write_data   = register_hw_write_data;
     @(negedge control__pclock);
     register__{{register.name}}__hw_write_enable =  0;
     register__{{register.name}}__hw_write_data   = 'x;
     {%- if register.is_software_readable() %}
     register_read (register__{{register.name}}__address);
-    assert(register_read_data === expected_read_data)
-      else $error("[%t] Incorrect value read by software access after writing all ones by hardware for register '{{register.name}}'. Expected '%0h' but got '%0h' instead.", $realtime, expected_read_data, register_read_data);
+    assert(register_sw_read_data === expected_data)
+      else $error("[%t] Incorrect value read by software access after writing all ones by hardware for register '{{register.name}}'. Expected '%0h' but got '%0h' instead.", $realtime, expected_data, register_sw_read_data);
     {%- endif %} {#- register.is_software_readable #}
     {%- if register.is_hardware_readable() %}
-    assert(register__{{register.name}} === expected_read_data)
-      else $error("[%t] Incorrect value read by hardware access after writing all ones by hardware for register '{{register.name}}'. Expected '%0h' but got '%0h' instead.", $realtime, expected_read_data, register__{{register.name}});
+    register_hw_read_data = register__{{register.name}};
+    assert(register_hw_read_data === expected_data)
+      else $error("[%t] Incorrect value read by hardware access after writing all ones by hardware for register '{{register.name}}'. Expected '%0h' but got '%0h' instead.", $realtime, expected_data, register_hw_read_data);
     {%- endif %} {#- register.is_hardware_readable #}
     {%- if register.is_software_readable() and register.is_hardware_readable() %}
-    assert(register_read_data === register__{{register.name}})
-      else $error("[%t] Different values read by software and software access for '{{register.name}}'. Hardware reads '%0h' but software read '%0h'.", $realtime, register__{{register.name}}, register_read_data);
+    assert(register_hw_read_data === register_sw_read_data)
+      else $error("[%t] Different values read by software and software access for register '{{register.name}}'. Hardware reads '%0h' but software read '%0h'.", $realtime, register_hw_read_data, register_sw_read_data);
     {%- endif %} {#- register.is_software_readable and register.is_hardware_readable #}
     {%- endif %} {#- register.is_hardware_writable #}
+    {%- endif %} {#- fields #}
     {%- endfor %} {#- registers #}
 
     repeat(5) @(negedge control__pclock);
@@ -299,28 +436,58 @@ module {{register_bank.name}}__register_bank__testbench;
     // Check 5 : Hardware write all zeros
     $display("CHECK 5 : Hardware write all zeros.");
     {%- for register in register_bank.registers %}
+    {%- if register.fields %} {%- for field in register.fields %}
+    {%- if field.is_hardware_writable() %}
+    {§ spacing 1 §}
+    expected_data = { {{field.width}} {1'b0}};
+    field_hw_write_data = expected_data;
+    register__{{register.name}}__{{field.name}}__hw_write_enable = 1;
+    register__{{register.name}}__{{field.name}}__hw_write_data   = field_hw_write_data;
+    @(negedge control__pclock);
+    register__{{register.name}}__{{field.name}}__hw_write_enable =  0;
+    register__{{register.name}}__{{field.name}}__hw_write_data   = 'x;
+    {%- if field.is_software_readable() %}
+    register_read (register__{{register.name}}__address);
+    field_sw_read_data = (register_sw_read_data & register__{{register.name}}__{{field.name}}__mask) >> register__{{register.name}}__{{field.name}}__offset;
+    assert(field_sw_read_data === expected_data)
+      else $error("[%t] Incorrect value read by software access after writing all zeros by hardware for register field '{{register.name}}.{{field.name}}'. Expected '%0h' but got '%0h' instead.", $realtime, expected_data, field_sw_read_data);
+    {%- endif %} {#- field.is_software_readable #}
+    {%- if field.is_hardware_readable() %}
+    field_hw_read_data = register__{{register.name}}__{{field.name}};
+    assert(field_hw_read_data === expected_data)
+      else $error("[%t] Incorrect value read by hardware access after writing all zeros by hardware for register field '{{register.name}}.{{field.name}}'. Expected '%0h' but got '%0h' instead.", $realtime, expected_data, field_hw_read_data);
+    {%- endif %} {#- field.is_hardware_readable #}
+    {%- if field.is_software_readable() and field.is_hardware_readable() %}
+    assert(field_hw_read_data === field_sw_read_data)
+      else $error("[%t] Different values read by software and software access for register field '{{register.name}}.{{field.name}}'. Hardware reads '%0h' but software read '%0h'.", $realtime, field_hw_read_data, field_sw_read_data);
+    {%- endif %} {#- field.is_software_readable and field.is_hardware_readable #}
+    {%- endif %} {#- field.is_hardware_writable #}
+    {%- endfor %} {%- else %} {#- fields #}
     {%- if register.is_hardware_writable() %}
     {§ spacing 1 §}
-    expected_read_data = { {{register.width}} {1'b0}};
+    expected_data = { {{register.width}} {1'b0}};
+    register_hw_write_data = expected_data;
     register__{{register.name}}__hw_write_enable = 1;
-    register__{{register.name}}__hw_write_data   = expected_read_data;
+    register__{{register.name}}__hw_write_data   = register_hw_write_data;
     @(negedge control__pclock);
     register__{{register.name}}__hw_write_enable =  0;
     register__{{register.name}}__hw_write_data   = 'x;
     {%- if register.is_software_readable() %}
     register_read (register__{{register.name}}__address);
-    assert(register_read_data === expected_read_data)
-      else $error("[%t] Incorrect value read by software access after writing all zeros by hardware for register '{{register.name}}'. Expected '%0h' but got '%0h' instead.", $realtime, expected_read_data, register_read_data);
+    assert(register_sw_read_data === expected_data)
+      else $error("[%t] Incorrect value read by software access after writing all zeros by hardware for register '{{register.name}}'. Expected '%0h' but got '%0h' instead.", $realtime, expected_data, register_sw_read_data);
     {%- endif %} {#- register.is_software_readable #}
     {%- if register.is_hardware_readable() %}
-    assert(register__{{register.name}} === expected_read_data)
-      else $error("[%t] Incorrect value read by hardware access after writing all zeros by hardware for register '{{register.name}}'. Expected '%0h' but got '%0h' instead.", $realtime, expected_read_data, register__{{register.name}});
+    register_hw_read_data = register__{{register.name}};
+    assert(register_hw_read_data === expected_data)
+      else $error("[%t] Incorrect value read by hardware access after writing all zeros by hardware for register '{{register.name}}'. Expected '%0h' but got '%0h' instead.", $realtime, expected_data, register_hw_read_data);
     {%- endif %} {#- register.is_hardware_readable #}
     {%- if register.is_software_readable() and register.is_hardware_readable() %}
-    assert(register_read_data === register__{{register.name}})
-      else $error("[%t] Different values read by software and software access for '{{register.name}}'. Hardware reads '%0h' but software read '%0h'.", $realtime, register__{{register.name}}, register_read_data);
+    assert(register_hw_read_data === register_sw_read_data)
+      else $error("[%t] Different values read by software and software access for register '{{register.name}}'. Hardware reads '%0h' but software read '%0h'.", $realtime, register_hw_read_data, register_sw_read_data);
     {%- endif %} {#- register.is_software_readable and register.is_hardware_readable #}
     {%- endif %} {#- register.is_hardware_writable #}
+   {%- endif %} {#- fields #}
     {%- endfor %} {#- registers #}
 
     repeat(5) @(negedge control__pclock);
