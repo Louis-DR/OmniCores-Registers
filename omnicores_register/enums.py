@@ -26,3 +26,11 @@ class HardwareAccessType(Enum):
   READ_ONLY  = auto()
   WRITE_ONLY = auto()
   READ_WRITE = auto()
+
+
+
+# Default access types
+register_default_software_access = SoftwareAccessType.READ_WRITE
+register_default_hardware_access = HardwareAccessType.READ_ONLY
+field_default_software_access    = SoftwareAccessType.READ_WRITE
+field_default_hardware_access    = HardwareAccessType.READ_ONLY

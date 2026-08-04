@@ -11,4 +11,5 @@
 
 from omnicores_register.register_bank import RegisterBank
 from omnicores_register.register import Register
+from omnicores_register.field import Field
 from omnicores_register.enums import SoftwareAccessType, HardwareAccessType
