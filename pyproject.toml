@@ -6,12 +6,13 @@ build-backend = "setuptools.build_meta"
 root = ""
 
 [project]
-name        = "omnicores-registers"
-description = "Hardware register bank generator."
-readme      = "README.md"
-authors     = [{ name = "Louis Duret-Robert", email = "louisduret@gmail.com" }]
-license     = { text = "MIT" }
-keywords    = [
+name          = "omnicores-registers"
+description   = "Hardware register bank generator."
+readme        = "README.md"
+authors       = [{ name = "Louis Duret-Robert", email = "louisduret@gmail.com" }]
+license       = "MIT"
+license-files = ["LICENSE"]
+keywords      = [
   "hardware",
   "semiconductor",
   "microelectronics",
@@ -41,9 +42,6 @@ omnicores-registers = "omnicores_register.cli:main"
 
 [project.urls]
 "Homepage" = "https://github.com/Louis-DR/OmniCores-Registers"
-
-[tool.setuptools]
-license-files = ["LICENSE"]
 
 [tool.setuptools.packages.find]
 where   = ["."]
