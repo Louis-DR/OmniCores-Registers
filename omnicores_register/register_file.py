@@ -27,5 +27,8 @@ class RegisterFile(ComponentContainer):
     self.address = None   # Absolute byte address, computed during elaboration
     self.size    = None   # Total byte size of the region, computed during elaboration
 
+    # Full hierarchical name including ancestor file names (computed during elaboration)
+    self.hierarchical_name = None
+
     # Padding with previous register in the firmware struct header
     self.sw_struct_padding = 0

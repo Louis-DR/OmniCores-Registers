@@ -48,6 +48,17 @@ def _elaborate_addresses(container, container_base):
 
 
 
+def _elaborate_hierarchical_names(container, parent_prefix):
+  """Recursively compute hierarchical names for all registers and files."""
+  for component in container.components:
+    if isinstance(component, RegisterFile):
+      prefix = f"{parent_prefix}__{component.name}" if parent_prefix else component.name
+      component.hierarchical_name = prefix
+      _elaborate_hierarchical_names(component, prefix)
+    elif isinstance(component, Register):
+      component.hierarchical_name = f"{parent_prefix}__{component.name}" if parent_prefix else component.name
+
+
 def _elaborate_struct_padding(container, container_address):
   """Recursively compute firmware struct padding for software-visible components."""
   # List components that appear in the C header struct (accessible by software)
@@ -78,6 +89,9 @@ def elaborate(self):
   """Elaborate the data structure after configuration and before generation."""
   # Resolve addresses recursively
   _elaborate_addresses(self, 0)
+
+  # Resolve hierarchical names recursively
+  _elaborate_hierarchical_names(self, "")
 
   # Separate registers and files recursively
   self.registers = self.get_registers_deep()
