@@ -35,6 +35,9 @@ class Register:
     self.hardware_access   = hardware_access
     self.fields            = fields or []
 
+    # Full hierarchical name including ancestor file names (computed during elaboration)
+    self.hierarchical_name = None
+
     # Padding with previous register
     self.sw_struct_padding = 0
     # Padding after the last field to fill the register width

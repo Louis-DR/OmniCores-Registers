@@ -35,19 +35,19 @@ module {{register_bank.name}}__register_bank (
   {%- for register in register_bank.registers %}
     {%- if register.fields %} {%- for field in register.fields %}
       {%- if field.is_hardware_readable() %}
-        output logic {{field.width|arr}} register__{{register.name}}__{{field.name}},
+        output logic {{field.width|arr}} register__{{register.hierarchical_name}}__{{field.name}},
       {%- endif %}
       {%- if field.is_hardware_writable() %}
-        input  logic                     register__{{register.name}}__{{field.name}}__hw_write_enable,
-        input  logic {{field.width|arr}} register__{{register.name}}__{{field.name}}__hw_write_data,
+        input  logic                     register__{{register.hierarchical_name}}__{{field.name}}__hw_write_enable,
+        input  logic {{field.width|arr}} register__{{register.hierarchical_name}}__{{field.name}}__hw_write_data,
       {%- endif %}
     {%- endfor %} {%- else %}
       {%- if register.is_hardware_readable() %}
-        output logic {{register.width|arr}} register__{{register.name}},
+        output logic {{register.width|arr}} register__{{register.hierarchical_name}},
       {%- endif %}
       {%- if register.is_hardware_writable() %}
-        input  logic                        register__{{register.name}}__hw_write_enable,
-        input  logic {{register.width|arr}} register__{{register.name}}__hw_write_data,
+        input  logic                        register__{{register.hierarchical_name}}__hw_write_enable,
+        input  logic {{register.width|arr}} register__{{register.hierarchical_name}}__hw_write_data,
       {%- endif %}
     {%- endif %}
   {%- endfor %}
@@ -69,9 +69,9 @@ module {{register_bank.name}}__register_bank (
   {%- filter autoformat_signal_definitions %}
     {% for register in register_bank.registers %}
       {%- if register.fields %} {%- for field in register.fields %}
-        logic {{field.width|arr}} register__{{register.name}}__{{field.name}}__storage;
+        logic {{field.width|arr}} register__{{register.hierarchical_name}}__{{field.name}}__storage;
       {%- endfor %} {%- else %}
-        logic {{register.width|arr}} register__{{register.name}}__storage;
+        logic {{register.width|arr}} register__{{register.hierarchical_name}}__storage;
       {%- endif %}
     {%- endfor %}
   {%- endfilter %} {#- autoformat_signal_definitions #}
@@ -95,11 +95,11 @@ module {{register_bank.name}}__register_bank (
         {%- for register in register_bank.registers %}
           {%- if register.fields %} {%- for field in register.fields %}
             {%- if field.reset_value is not none %}
-              register__{{register.name}}__{{field.name}}__storage § <= § {{field.width}}'h{{field.reset_value|hexadecimal}}; §§
+              register__{{register.hierarchical_name}}__{{field.name}}__storage § <= § {{field.width}}'h{{field.reset_value|hexadecimal}}; §§
             {%- endif %}
           {%- endfor %} {%- else %}
             {%- if register.reset_value is not none %}
-              register__{{register.name}}__storage § <= § {{register.width}}'h{{register.reset_value|hexadecimal}}; §§
+              register__{{register.hierarchical_name}}__storage § <= § {{register.width}}'h{{register.reset_value|hexadecimal}}; §§
             {%- endif %}
           {%- endif %}
         {%- endfor %}
@@ -119,11 +119,11 @@ module {{register_bank.name}}__register_bank (
           {%- for register in register_bank.registers %}
             {%- if register.fields %}
               {%- if register.is_software_writable() %}
-                32'h{{register.address|hexadecimal}} § : begin {%- for field in register.fields -%} {%- if field.is_software_writable() %} § register__{{register.name}}__{{field.name}}__storage § <= control__pwdata § [{{field.offset+field.width-1}}:{{field.offset}}]; §§ {{"end" if loop.last else "\n § "}} {%- endif -%} {%- endfor -%}
+                32'h{{register.address|hexadecimal}} § : begin {%- for field in register.fields -%} {%- if field.is_software_writable() %} § register__{{register.hierarchical_name}}__{{field.name}}__storage § <= control__pwdata § [{{field.offset+field.width-1}}:{{field.offset}}]; §§ {{"end" if loop.last else "\n § "}} {%- endif -%} {%- endfor -%}
               {%- endif %}
             {%- else %}
               {%- if register.is_software_writable() %}
-                32'h{{register.address|hexadecimal}} § : § register__{{register.name}}__storage § <= control__pwdata § [{{register.width-1}}:0]; §§
+                32'h{{register.address|hexadecimal}} § : § register__{{register.hierarchical_name}}__storage § <= control__pwdata § [{{register.width-1}}:0]; §§
             {%- endif %}
             {%- endif %}
           {%- endfor %}
@@ -140,11 +140,11 @@ module {{register_bank.name}}__register_bank (
       {%- for register in register_bank.registers %}
         {%- if register.fields %} {%- for field in register.fields %}
           {%- if field.is_hardware_writable() %}
-            if (register__{{register.name}}__{{field.name}}__hw_write_enable) § register__{{register.name}}__{{field.name}}__storage § <= register__{{register.name}}__{{field.name}}__hw_write_data;
+            if (register__{{register.hierarchical_name}}__{{field.name}}__hw_write_enable) § register__{{register.hierarchical_name}}__{{field.name}}__storage § <= register__{{register.hierarchical_name}}__{{field.name}}__hw_write_data;
           {%- endif %} {#- field.is_hardware_writable #}
         {%- endfor %} {%- else %} {#- fields #}
           {%- if register.is_hardware_writable() %}
-            if (register__{{register.name}}__hw_write_enable) § register__{{register.name}}__storage § <= register__{{register.name}}__hw_write_data;
+            if (register__{{register.hierarchical_name}}__hw_write_enable) § register__{{register.hierarchical_name}}__storage § <= register__{{register.hierarchical_name}}__hw_write_data;
           {%- endif %} {#- register.is_hardware_writable #}
         {%- endif %} {#- fields #}
       {%- endfor %} {#- registers #}
@@ -182,11 +182,11 @@ module {{register_bank.name}}__register_bank (
             {%- for register in register_bank.registers %}
               {%- if register.fields %}
                 {%- if register.is_software_readable() %}
-                  32'h{{register.address|hexadecimal}} § : begin {%- for field in register.fields -%} {%- if field.is_software_readable() %} § control__prdata § [{{field.offset+field.width-1}}:{{field.offset}}] §§ = register__{{register.name}}__{{field.name}}__storage; {{"end" if loop.last else "\n § "}} {%- endif -%} {%- endfor -%}
+                  32'h{{register.address|hexadecimal}} § : begin {%- for field in register.fields -%} {%- if field.is_software_readable() %} § control__prdata § [{{field.offset+field.width-1}}:{{field.offset}}] §§ = register__{{register.hierarchical_name}}__{{field.name}}__storage; {{"end" if loop.last else "\n § "}} {%- endif -%} {%- endfor -%}
                 {%- endif %}
               {%- else %}
                 {%- if register.is_software_readable() %}
-                  32'h{{register.address|hexadecimal}} § : § control__prdata § [{{register.width-1}}:0] §§ = register__{{register.name}}__storage;
+                  32'h{{register.address|hexadecimal}} § : § control__prdata § [{{register.width-1}}:0] §§ = register__{{register.hierarchical_name}}__storage;
                 {%- endif %}
               {%- endif %}
             {%- endfor %}
@@ -222,9 +222,9 @@ module {{register_bank.name}}__register_bank (
   {%- filter reindent(1) %}
     {%- for register in register_bank.registers %}
       {%- if register.fields %} {%- for field in register.fields %}
-        assign register__{{register.name}}__{{field.name}} § = register__{{register.name}}__{{field.name}}__storage;
+        assign register__{{register.hierarchical_name}}__{{field.name}} § = register__{{register.hierarchical_name}}__{{field.name}}__storage;
       {%- endfor %} {%- else %}
-        assign register__{{register.name}} § = register__{{register.name}}__storage;
+        assign register__{{register.hierarchical_name}} § = register__{{register.hierarchical_name}}__storage;
       {%- endif %}
     {%- endfor %}
   {%- endfilter %} {#- reindent #}
