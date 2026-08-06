@@ -23,22 +23,24 @@ package {{register_bank.name}}__register_bank__package;
 
 
   {%- filter align %}
-  {%- for register in register_bank.registers %}
-  localparam logic § [31:0] §§ register__{{register.name}}__address § = § 32'h{{register.address|hexadecimal}}; §§
-  localparam integer § § register__{{register.name}}__width § = § {{register.width}}; §§
-  localparam logic § [31:0] §§ register__{{register.name}}__mask § = § 32'h{{(2**register.width-1)|hexadecimal}}; §§
-  {%- if register.reset_value is not none %}
-  localparam logic § {{register.width|arr}} §§ register__{{register.name}}__reset_value § = § {{register.width}}'h{{register.reset_value|hexadecimal}}; §§
-  {%- endif %} {#- register.reset_value #}
-  {% if register.fields %} {%- for field in register.fields %}
-  localparam integer § § register__{{register.name}}__{{field.name}}__offset § = § {{field.offset}}; §§
-  localparam integer § § register__{{register.name}}__{{field.name}}__width § = § {{field.width}}; §§
-  localparam logic § [31:0] §§ register__{{register.name}}__{{field.name}}__mask § = § 32'h{{(2**field.offset*(2**field.width-1))|hexadecimal}}; §§
-  {%- if field.reset_value is not none %}
-  localparam logic § {{field.width|arr}} §§ register__{{register.name}}__{{field.name}}__reset_value § = § {{field.width}}'h{{field.reset_value|hexadecimal}}; §§
-  {%- endif %} {#- field.reset_value #}
-  {% endfor %} {%- endif %} {#- fields #}
-  {%  endfor %} {#- registers #}
+  {%- filter reindent(1) %}
+    {%- for register in register_bank.registers %}
+      localparam logic § [31:0] §§ register__{{register.name}}__address § = § 32'h{{register.address|hexadecimal}}; §§
+      localparam integer § § register__{{register.name}}__width § = § {{register.width}}; §§
+      localparam logic § [31:0] §§ register__{{register.name}}__mask § = § 32'h{{(2**register.width-1)|hexadecimal}}; §§
+      {%- if register.reset_value is not none %}
+        localparam logic § {{register.width|arr}} §§ register__{{register.name}}__reset_value § = § {{register.width}}'h{{register.reset_value|hexadecimal}}; §§
+      {%- endif %}
+      {% if register.fields %} {%- for field in register.fields %}
+        localparam integer § § register__{{register.name}}__{{field.name}}__offset § = § {{field.offset}}; §§
+        localparam integer § § register__{{register.name}}__{{field.name}}__width § = § {{field.width}}; §§
+        localparam logic § [31:0] §§ register__{{register.name}}__{{field.name}}__mask § = § 32'h{{(2**field.offset*(2**field.width-1))|hexadecimal}}; §§
+        {%- if field.reset_value is not none %}
+          localparam logic § {{field.width|arr}} §§ register__{{register.name}}__{{field.name}}__reset_value § = § {{field.width}}'h{{field.reset_value|hexadecimal}}; §§
+        {%- endif %}
+      {% endfor %} {%- endif %}
+    {%  endfor %}
+  {%- endfilter %} {#- reindent #}
   {%- endfilter %} {#- align #}
 
 

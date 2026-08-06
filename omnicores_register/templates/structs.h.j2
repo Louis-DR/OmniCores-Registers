@@ -33,17 +33,19 @@ typedef union {
   volatile uint32_t _raw_;
   struct {
     {%- filter align %}
-    {%- for field in register.fields %}
-    {%- if field.is_software_accessible() %}
-    {%- if field.sw_struct_padding > 0 %}
-    § uint32_t § § : § {{field.sw_struct_padding}}; §§
-    {%- endif %} {#- field.sw_struct_padding#}
-    volatile {% if not field.is_software_writable() %}const{% endif %} § uint32_t § {{field.name}} § : § {{field.width}}; §§
-    {%- endif %} {#- field.is_software_accessible #}
-    {%- endfor %} {#- fields #}
-    {%- if register.sw_struct_fields_padding > 0 %}
-    § uint32_t § § : § {{register.sw_struct_fields_padding}}; §§
-    {%- endif %} {#- register.sw_struct_fields_padding#}
+    {%- filter reindent(2) %}
+      {%- for field in register.fields %}
+        {%- if field.is_software_accessible() %}
+          {%- if field.sw_struct_padding > 0 %}
+            § uint32_t § § : § {{field.sw_struct_padding}}; §§
+          {%- endif %}
+          volatile {% if not field.is_software_writable() %}const{% endif %} § uint32_t § {{field.name}} § : § {{field.width}}; §§
+        {%- endif %}
+      {%- endfor %}
+      {%- if register.sw_struct_fields_padding > 0 %}
+        § uint32_t § § : § {{register.sw_struct_fields_padding}}; §§
+      {%- endif %}
+    {%- endfilter %} {#- reindent #}
     {%- endfilter %} {#- align #}
   };
 } {{register_bank.name}}__{{register.name}};
@@ -60,19 +62,21 @@ typedef union {
 
 typedef struct {{register_bank.name}}__register_bank {
   {%- filter restructure %}
-  {%- set reserved_accumulator = Accumulator() %}
-  {%- for register in register_bank.registers %}
-  {%- if register.is_software_accessible() %}
-  {%- if register.sw_struct_padding > 0 %}
-  {§ align 1 §} uint32_t {§ align 2 §} _reserved{{reserved_accumulator.increment_after()}}_[{{register.sw_struct_padding}}];
-  {%- endif %} {#- register.sw_struct_padding#}
-  {%- if register.fields %}
-  {{register_bank.name}}__{{register.name}} {§ align 2 §} {{register.name}};
-  {%- else %} {#- fields #}
-  volatile {% if not register.is_software_writable() %}const{% endif %} {§ align 1 §} uint32_t {§ align 2 §} {{register.name}};
-  {%- endif %} {#- fields #}
-  {%- endif %} {#- register.is_software_accessible #}
-  {%- endfor %} {#- registers #}
+  {%- filter reindent(1) %}
+    {%- set reserved_accumulator = Accumulator() %}
+    {%- for register in register_bank.registers %}
+      {%- if register.is_software_accessible() %}
+        {%- if register.sw_struct_padding > 0 %}
+          {§ align 1 §} uint32_t {§ align 2 §} _reserved{{reserved_accumulator.increment_after()}}_[{{register.sw_struct_padding}}];
+        {%- endif %}
+        {%- if register.fields %}
+          {{register_bank.name}}__{{register.name}} {§ align 2 §} {{register.name}};
+        {%- else %}
+          volatile {% if not register.is_software_writable() %}const{% endif %} {§ align 1 §} uint32_t {§ align 2 §} {{register.name}};
+        {%- endif %}
+      {%- endif %}
+    {%- endfor %}
+  {%- endfilter %} {#- reindent #}
   {%- endfilter %} {#- restructure #}
 } _STRUCT_ATTRIBUTES_ {{register_bank.name}};
 
