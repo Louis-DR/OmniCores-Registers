@@ -102,32 +102,35 @@ module {{register_bank.name}}__register_bank__testbench;
 
 
   // Registers
+  {%- filter reindent(1) %}
   {%- filter autoformat_signal_definitions %}
-  {%  for register in register_bank.registers %}
-  {%- if register.fields %} {%- for field in register.fields %}
-  {%- if field.is_hardware_readable() %}
-  logic {{field.width|arr}} register__{{register.name}}__{{field.name}};
-  {%- endif %} {#- field.is_hardware_readable #}
-  {%- if field.is_hardware_writable() %}
-  logic                     register__{{register.name}}__{{field.name}}__hw_write_enable;
-  logic {{field.width|arr}} register__{{register.name}}__{{field.name}}__hw_write_data;
-  {%- endif %} {#- field.is_hardware_writable #}
-  {%- endfor %} {%- else %} {#- fields #}
-  {%- if register.is_hardware_readable() %}
-  logic {{register.width|arr}} register__{{register.name}};
-  {%- endif %} {#- register.is_hardware_readable #}
-  {%- if register.is_hardware_writable() %}
-  logic                        register__{{register.name}}__hw_write_enable;
-  logic {{register.width|arr}} register__{{register.name}}__hw_write_data;
-  {%- endif %} {#- register.is_hardware_writable #}
-  {%- endif %} {#- fields #}
-  {%- endfor %} {#- registers #}
+    {%  for register in register_bank.registers %}
+      {%- if register.fields %} {%- for field in register.fields %}
+        {%- if field.is_hardware_readable() %}
+          logic {{field.width|arr}} register__{{register.name}}__{{field.name}};
+        {%- endif %}
+        {%- if field.is_hardware_writable() %}
+          logic                     register__{{register.name}}__{{field.name}}__hw_write_enable;
+          logic {{field.width|arr}} register__{{register.name}}__{{field.name}}__hw_write_data;
+        {%- endif %}
+      {%- endfor %} {%- else %}
+        {%- if register.is_hardware_readable() %}
+          logic {{register.width|arr}} register__{{register.name}};
+        {%- endif %}
+        {%- if register.is_hardware_writable() %}
+          logic                        register__{{register.name}}__hw_write_enable;
+          logic {{register.width|arr}} register__{{register.name}}__hw_write_data;
+        {%- endif %}
+      {%- endif %}
+    {%- endfor %}
   {%- endfilter %} {#-autoformat_signal_definitions #}
+  {%- endfilter %} {#- reindent #}
 
   // Register bank under test
   {{register_bank.name}}__register_bank {{register_bank.name}}__register_bank__dut (
     {% filter remove_blank_lines -%}
     {% filter remove_last_comma -%}
+    {% filter reindent(2) -%}
     {% filter autoformat_instance_ports -%}
 
     // Control interface
@@ -143,26 +146,27 @@ module {{register_bank.name}}__register_bank__testbench;
 
     // Registers
     {%- for register in register_bank.registers %}
-    {%- if register.fields %} {%- for field in register.fields %}
-    {%- if field.is_hardware_readable() %}
-    .register__{{register.name}}__{{field.name}} ( register__{{register.name}}__{{field.name}} ),
-    {%- endif %} {#- field.is_hardware_readable #}
-    {%- if field.is_hardware_writable() %}
-    .register__{{register.name}}__{{field.name}}__hw_write_enable ( register__{{register.name}}__{{field.name}}__hw_write_enable ),
-    .register__{{register.name}}__{{field.name}}__hw_write_data ( register__{{register.name}}__{{field.name}}__hw_write_data ),
-    {%- endif %} {#- field.is_hardware_writable #}
-    {%- endfor %} {%- else %} {#- fields #}
-    {%- if register.is_hardware_readable() %}
-    .register__{{register.name}} ( register__{{register.name}} ),
-    {%- endif %} {#- register.is_hardware_readable #}
-    {%- if register.is_hardware_writable() %}
-    .register__{{register.name}}__hw_write_enable ( register__{{register.name}}__hw_write_enable ),
-    .register__{{register.name}}__hw_write_data ( register__{{register.name}}__hw_write_data ),
-    {%- endif %} {#- register.is_hardware_writable #}
-    {%- endif %} {#- fields #}
-    {%- endfor %} {#- registers #}
+      {%- if register.fields %} {%- for field in register.fields %}
+        {%- if field.is_hardware_readable() %}
+          .register__{{register.name}}__{{field.name}} ( register__{{register.name}}__{{field.name}} ),
+        {%- endif %}
+        {%- if field.is_hardware_writable() %}
+          .register__{{register.name}}__{{field.name}}__hw_write_enable ( register__{{register.name}}__{{field.name}}__hw_write_enable ),
+          .register__{{register.name}}__{{field.name}}__hw_write_data ( register__{{register.name}}__{{field.name}}__hw_write_data ),
+        {%- endif %}
+      {%- endfor %} {%- else %}
+        {%- if register.is_hardware_readable() %}
+          .register__{{register.name}} ( register__{{register.name}} ),
+        {%- endif %}
+        {%- if register.is_hardware_writable() %}
+          .register__{{register.name}}__hw_write_enable ( register__{{register.name}}__hw_write_enable ),
+          .register__{{register.name}}__hw_write_data ( register__{{register.name}}__hw_write_data ),
+        {%- endif %}
+      {%- endif %}
+    {%- endfor %}
 
     {%- endfilter %} {#- autoformat_instance_ports #}
+    {%- endfilter %} {#- reindent #}
     {%- endfilter %} {#- remove_last_comma #}
     {%- endfilter %} {#- remove_blank_lines #}
   );
@@ -184,17 +188,19 @@ module {{register_bank.name}}__register_bank__testbench;
     // Initialization
     control__psel = 0;
     {%- filter align %}
-    {%- for register in register_bank.registers %}
-    {%- if register.fields %} {%- for field in register.fields %}
-    {%- if field.is_hardware_writable() %}
-    register__{{register.name}}__{{field.name}}__hw_write_enable § = 0;
-    {%- endif %} {#- field.is_hardware_writable #}
-    {%- endfor %} {%- else %} {#- fields #}
-    {%- if register.is_hardware_writable() %}
-    register__{{register.name}}__hw_write_enable § = 0;
-    {%- endif %} {#- register.is_hardware_writable #}
-    {%- endif %} {#- fields #}
-    {%- endfor %} {#- registers #}
+    {%- filter reindent(2) %}
+      {%- for register in register_bank.registers %}
+        {%- if register.fields %} {%- for field in register.fields %}
+          {%- if field.is_hardware_writable() %}
+            register__{{register.name}}__{{field.name}}__hw_write_enable § = 0;
+          {%- endif %}
+        {%- endfor %} {%- else %}
+          {%- if register.is_hardware_writable() %}
+            register__{{register.name}}__hw_write_enable § = 0;
+          {%- endif %}
+        {%- endif %}
+      {%- endfor %}
+    {%- endfilter %} {#- reindent #}
     {%- endfilter %} {#- align #}
 
     // Reset
@@ -487,7 +493,7 @@ module {{register_bank.name}}__register_bank__testbench;
       else $error("[%t] Different values read by software and software access for register '{{register.name}}'. Hardware reads '%0h' but software read '%0h'.", $realtime, register_hw_read_data, register_sw_read_data);
     {%- endif %} {#- register.is_software_readable and register.is_hardware_readable #}
     {%- endif %} {#- register.is_hardware_writable #}
-   {%- endif %} {#- fields #}
+    {%- endif %} {#- fields #}
     {%- endfor %} {#- registers #}
 
     repeat(5) @(negedge control__pclock);
