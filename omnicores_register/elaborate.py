@@ -59,6 +59,32 @@ def _elaborate_hierarchical_names(container, parent_prefix):
       component.hierarchical_name = f"{parent_prefix}__{component.name}" if parent_prefix else component.name
 
 
+
+def _elaborate_file_emptiness(container):
+  """Recursively determine which register files are empty in the firmware struct.
+
+  A file is empty if none of its direct children are software-visible:
+  registers must pass is_software_accessible(), and sub-files must not be
+  empty themselves. Uses post-order so children are evaluated first.
+  """
+  for component in container.components:
+    if isinstance(component, RegisterFile):
+      _elaborate_file_emptiness(component)
+
+      has_visible_child = False
+      for child in component.components:
+        if isinstance(child, Register):
+          if child.is_software_accessible():
+            has_visible_child = True
+            break
+        elif isinstance(child, RegisterFile):
+          if not child.sw_struct_empty:
+            has_visible_child = True
+            break
+      component.sw_struct_empty = not has_visible_child
+
+
+
 def _elaborate_struct_padding(container, container_address):
   """Recursively compute firmware struct padding for software-visible components."""
   # List components that appear in the C header struct (accessible by software)
@@ -68,8 +94,9 @@ def _elaborate_struct_padding(container, container_address):
       if component.is_software_accessible():
         fw_components.append(component)
     elif isinstance(component, RegisterFile):
-      fw_components.append(component)
       _elaborate_struct_padding(component, component.address)
+      if not component.sw_struct_empty:
+        fw_components.append(component)
 
   # Sort by address
   fw_components.sort(key=lambda component: component.address)
@@ -150,6 +177,9 @@ def elaborate(self):
             HardwareAccessType.WRITE_ONLY : HardwareAccessType.READ_WRITE,
             HardwareAccessType.READ_WRITE : HardwareAccessType.READ_WRITE,
           }[register.hardware_access]
+
+  # Compute which register files are empty in the firmware struct
+  _elaborate_file_emptiness(self)
 
   # Padding before each register and file for the firmware struct header.
   # Computed recursively per container : only direct children appear

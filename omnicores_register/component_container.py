@@ -51,3 +51,17 @@ class ComponentContainer:
       elif isinstance(component, RegisterFile):
         collected_registers.extend(component.get_registers_deep())
     return collected_registers
+
+  def get_files_postorder(self):
+    """Collect all RegisterFile objects in bottom-up order (deepest files first).
+
+    This order satisfies C forward-declaration requirements when generating
+    nested structs: a child file struct must be declared before its parent.
+    """
+    from omnicores_register.register_file import RegisterFile
+    collected_files = []
+    for component in self.components:
+      if isinstance(component, RegisterFile):
+        collected_files.extend(component.get_files_postorder())
+        collected_files.append(component)
+    return collected_files

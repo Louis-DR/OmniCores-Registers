@@ -30,5 +30,8 @@ class RegisterFile(ComponentContainer):
     # Full hierarchical name including ancestor file names (computed during elaboration)
     self.hierarchical_name = None
 
+    # Whether the file and all its descendants contain no software-visible components
+    self.sw_struct_empty = False
+
     # Padding with previous register in the firmware struct header
     self.sw_struct_padding = 0
