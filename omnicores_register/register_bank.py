@@ -11,22 +11,20 @@
 
 
 
-from omnicores_register.register import Register
+from omnicores_register.component_container import ComponentContainer
 from omnicores_register.elaborate import elaborate
 from omnicores_register.generate import generate
 
 
 
-class RegisterBank:
+class RegisterBank(ComponentContainer):
   """Core class and root of the data structure describing the generated register bank."""
   # Constructor
   def __init__(self, name:str):
-    self.name = name
+    super().__init__(name)
+    # Flat lists of all registers and files in the hierarchy, populated during elaboration
     self.registers = []
-
-  # Methods to add components
-  def add_register(self, register:Register):
-    self.registers.append(register)
+    self.files     = []
 
   # Import the methods from their dedicated files
   elaborate = elaborate

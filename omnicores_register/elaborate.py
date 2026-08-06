@@ -10,6 +10,8 @@
 
 
 
+from omnicores_register.register_file import RegisterFile
+from omnicores_register.register import Register
 from omnicores_register.enums import (
   SoftwareAccessType,
   HardwareAccessType,
@@ -21,17 +23,65 @@ from omnicores_register.enums import (
 
 
 
+def _elaborate_addresses(container, container_base):
+  """Recursively resolve absolute addresses of registers and files within a container."""
+  running_offset = 0
+  # Iterate over components of this container
+  for component in container.components:
+    # If the designer specified an explicit offset for this component,
+    # jump the running offset to that position within the parent container.
+    if component.offset is not None:
+      running_offset = component.offset
+    # The absolute address is the container base plus the relative offset
+    component.address = container_base + running_offset
+    # Recursively resolve the addresses for sub-files
+    if isinstance(component, RegisterFile):
+      # The sub-file components offsets are relative to this file's base address
+      end_address = _elaborate_addresses(component, component.address)
+      # The file region size is the bounding box of its children
+      component.size = end_address - component.address
+      running_offset += component.size
+    # Each register occupies 4 bytes (32-bit word alignment)
+    elif isinstance(component, Register):
+      running_offset += 4
+  return container_base + running_offset
+
+
+
+def _elaborate_struct_padding(container, container_address):
+  """Recursively compute firmware struct padding for software-visible components."""
+  # List components that appear in the C header struct (accessible by software)
+  fw_components = []
+  for component in container.components:
+    if isinstance(component, Register):
+      if component.is_software_accessible():
+        fw_components.append(component)
+    elif isinstance(component, RegisterFile):
+      fw_components.append(component)
+      _elaborate_struct_padding(component, component.address)
+
+  # Sort by address
+  fw_components.sort(key=lambda component: component.address)
+
+  # Compute the padding
+  previous_end_address = container_address
+  for component in fw_components:
+    component.sw_struct_padding = (component.address - previous_end_address) // 4
+    if isinstance(component, RegisterFile):
+      previous_end_address = component.address + component.size
+    else:
+      previous_end_address = component.address + 4
+
+
+
 def elaborate(self):
   """Elaborate the data structure after configuration and before generation."""
-  # Address offset of each register
-  running_address = 0
-  for register in self.registers:
-    if register.offset is None:
-      register.address = running_address
-    else:
-      register.address = register.offset
-      running_address  = register.offset
-    running_address += 4
+  # Resolve addresses recursively
+  _elaborate_addresses(self, 0)
+
+  # Separate registers and files recursively
+  self.registers = self.get_registers_deep()
+  self.files     = self.get_files_deep()
 
   # Bit offset and padding of each register field
   for register in self.registers:
@@ -87,12 +137,14 @@ def elaborate(self):
             HardwareAccessType.READ_WRITE : HardwareAccessType.READ_WRITE,
           }[register.hardware_access]
 
-  # Padding before each register and fields for firmware struct header
-  previous_address = -4
+  # Padding before each register and file for the firmware struct header.
+  # Computed recursively per container : only direct children appear
+  # in a container's struct, and sub-files are recursed into for their own
+  # internal padding.
+  _elaborate_struct_padding(self, 0)
+
+  # Padding before each field for the firmware bitfield struct
   for register in self.registers:
-    if register.is_software_readable() or register.is_software_writable():
-      register.sw_struct_padding = (register.address - previous_address - 4) // 4
-      previous_address = register.address
     if register.fields:
       previous_offset = 0
       for field in register.fields:
