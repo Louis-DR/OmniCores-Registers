@@ -26,9 +26,10 @@
 {§ spacing 3 §}
 
 
+
+{# Registers with fields #}
 {%- for register in register_bank.registers %}
-{%- if register.is_software_accessible() %}
-{% if register.fields %}
+{%- if register.fields and register.is_software_accessible() %}
 typedef union {
   volatile uint32_t _raw_;
   struct {
@@ -48,11 +49,10 @@ typedef union {
     {%- endfilter %} {#- reindent #}
     {%- endfilter %} {#- align #}
   };
-} {{register_bank.name}}__{{register.name}};
-{%- endif %} {#- fields #}
-{%- endif %} {#- register.is_software_accessible #}
+} {{register_bank.name}}__{{register.hierarchical_name}};
 {§ spacing 3 §}
-{%- endfor %} {#- registers #}
+{%- endif %}
+{%- endfor %}
 
 
 
@@ -60,19 +60,72 @@ typedef union {
 
 
 
+{# Register files #}
+{%- set file_postorder = register_bank.get_files_postorder() %}
+{%- if file_postorder %}
+{%- for file in file_postorder %}
+{%- if not file.sw_struct_empty %}
+typedef struct {{register_bank.name}}__{{file.hierarchical_name}} {
+    {%- filter reindent(1) %}
+    {%- set reserved = Accumulator() %}
+      {%- for component in file.components %}
+        {%- if component.width is defined %}
+          {%- if component.is_software_accessible() %}
+            {%- if component.sw_struct_padding > 0 %}
+              {§ align 1 §} uint32_t {§ align 2 §} _reserved{{reserved.increment_after()}}_[{{component.sw_struct_padding}}];
+            {%- endif %}
+            {%- if component.fields %}
+              {{register_bank.name}}__{{component.hierarchical_name}} {§ align 2 §} {{component.name}};
+            {%- else %}
+              volatile {% if not component.is_software_writable() %}const{% endif %} {§ align 1 §} uint32_t {§ align 2 §} {{component.name}};
+            {%- endif %}
+          {%- endif %}
+        {%- else %}
+          {%- if not component.sw_struct_empty %}
+            {%- if component.sw_struct_padding > 0 %}
+              {§ align 1 §} uint32_t {§ align 2 §} _reserved{{reserved.increment_after()}}_[{{component.sw_struct_padding}}];
+            {%- endif %}
+            {{register_bank.name}}__{{component.hierarchical_name}} {§ align 2 §} {{component.name}};
+          {%- endif %}
+        {%- endif %}
+      {%- endfor %}
+    {%- endfilter %} {#- reindent #}
+} _STRUCT_ATTRIBUTES_ {{register_bank.name}}__{{file.hierarchical_name}};
+{§ spacing 3 §}
+{%- endif %}
+{%- endfor %}
+{§ spacing 3 §}
+{%- endif %}
+
+
+
+{§ spacing 3 §}
+
+
+
+{# Top-level of the register bank #}
 typedef struct {{register_bank.name}}__register_bank {
   {%- filter restructure %}
   {%- filter reindent(1) %}
-    {%- set reserved_accumulator = Accumulator() %}
-    {%- for register in register_bank.registers %}
-      {%- if register.is_software_accessible() %}
-        {%- if register.sw_struct_padding > 0 %}
-          {§ align 1 §} uint32_t {§ align 2 §} _reserved{{reserved_accumulator.increment_after()}}_[{{register.sw_struct_padding}}];
+  {%- set reserved = Accumulator() %}
+    {%- for component in register_bank.components %}
+      {%- if component.width is defined %}
+        {%- if component.is_software_accessible() %}
+          {%- if component.sw_struct_padding > 0 %}
+            {§ align 1 §} uint32_t {§ align 2 §} _reserved{{reserved.increment_after()}}_[{{component.sw_struct_padding}}];
+          {%- endif %}
+          {%- if component.fields %}
+            {{register_bank.name}}__{{component.hierarchical_name}} {§ align 2 §} {{component.name}};
+          {%- else %}
+            volatile {% if not component.is_software_writable() %}const{% endif %} {§ align 1 §} uint32_t {§ align 2 §} {{component.name}};
+          {%- endif %}
         {%- endif %}
-        {%- if register.fields %}
-          {{register_bank.name}}__{{register.name}} {§ align 2 §} {{register.name}};
-        {%- else %}
-          volatile {% if not register.is_software_writable() %}const{% endif %} {§ align 1 §} uint32_t {§ align 2 §} {{register.name}};
+      {%- else %}
+        {%- if not component.sw_struct_empty %}
+          {%- if component.sw_struct_padding > 0 %}
+            {§ align 1 §} uint32_t {§ align 2 §} _reserved{{reserved.increment_after()}}_[{{component.sw_struct_padding}}];
+          {%- endif %}
+          {{register_bank.name}}__{{component.hierarchical_name}} {§ align 2 §} {{component.name}};
         {%- endif %}
       {%- endif %}
     {%- endfor %}
