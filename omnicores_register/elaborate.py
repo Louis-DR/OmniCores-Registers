@@ -10,6 +10,7 @@
 
 
 
+from math import ceil
 from omnicores_register.register_file import RegisterFile
 from omnicores_register.register import Register
 from omnicores_register.enums import (
@@ -32,8 +33,12 @@ def _elaborate_addresses(container, container_base):
     # jump the running offset to that position within the parent container.
     if component.offset is not None:
       running_offset = component.offset
+    # The alignment modulo applies on the offset
+    if component.align is not None:
+      running_offset = ceil(running_offset / component.align) * component.align
     # The absolute address is the container base plus the relative offset
     component.address = container_base + running_offset
+    # TODO: check that the address is aligned to the register width
     # Recursively resolve the addresses for sub-files
     if isinstance(component, RegisterFile):
       # The sub-file components offsets are relative to this file's base address
@@ -66,6 +71,8 @@ def _elaborate_field_offsets(container):
       if register.fields:
         running_offset = 0
         for field in register.fields:
+          if field.align is not None:
+            running_offset = ceil(running_offset / field.align) * field.align
           if field.offset is None:
             field.offset = running_offset
           else:
@@ -151,10 +158,8 @@ def _elaborate_component_padding(container, container_address):
       _elaborate_component_padding(component, component.address)
       if not component.sw_struct_empty:
         fw_components.append(component)
-
   # Sort by address
   fw_components.sort(key=lambda component: component.address)
-
   # Compute the padding
   previous_end_address = container_address
   for component in fw_components:

@@ -24,9 +24,11 @@ class RegisterFile(ComponentContainer):
       title       : Optional[str] = None,
       description : Optional[str] = "",
       offset      : Optional[int] = None,
+      align       : Optional[int] = None
     ):
     super().__init__(name)
     self.offset  = offset # Relative byte offset to the parent container (None for automatic)
+    self.align   = align  # Align address to granularity
     self.address = None   # Absolute byte address, computed during elaboration
     self.size    = None   # Total byte size of the region, computed during elaboration
 

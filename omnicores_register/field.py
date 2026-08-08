@@ -23,6 +23,7 @@ class Field:
       description     : Optional[str]                = "",
       width           : int                          = 1,
       offset          : Optional[int]                = None,
+      align           : Optional[int]                = None,
       reset_value     : Optional[int]                = 0,
       software_access : Optional[SoftwareAccessType] = None, # Default defined in elaboration
       hardware_access : Optional[HardwareAccessType] = None, # Default defined in elaboration
@@ -30,6 +31,7 @@ class Field:
     self.name              = name
     self.width             = width
     self.offset            = offset
+    self.align             = align # Align offset to granularity
     self.reset_value       = reset_value
     self.software_access   = software_access
     self.hardware_access   = hardware_access

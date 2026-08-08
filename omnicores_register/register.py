@@ -24,6 +24,7 @@ class Register:
       description     : Optional[str]                = "",
       width           : int                          = 32,
       offset          : Optional[int]                = None,
+      align           : Optional[int]                = None,
       reset_value     : Optional[int]                = 0,
       software_access : Optional[SoftwareAccessType] = None, # Default defined in elaboration
       hardware_access : Optional[HardwareAccessType] = None, # Default defined in elaboration
@@ -32,6 +33,7 @@ class Register:
     self.name              = name
     self.width             = width
     self.offset            = offset
+    self.align             = align # Align address to granularity
     self.address           = None
     self.reset_value       = reset_value
     self.software_access   = software_access
