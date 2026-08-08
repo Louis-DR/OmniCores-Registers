@@ -60,83 +60,23 @@ def _elaborate_hierarchical_names(container, parent_prefix):
 
 
 
-def _elaborate_file_emptiness(container):
-  """Recursively determine which register files are empty in the firmware struct.
-
-  A file is empty if none of its direct children are software-visible:
-  registers must pass is_software_accessible(), and sub-files must not be
-  empty themselves. Uses post-order so children are evaluated first.
-  """
-  for component in container.components:
-    if isinstance(component, RegisterFile):
-      _elaborate_file_emptiness(component)
-
-      has_visible_child = False
-      for child in component.components:
-        if isinstance(child, Register):
-          if child.is_software_accessible():
-            has_visible_child = True
-            break
-        elif isinstance(child, RegisterFile):
-          if not child.sw_struct_empty:
-            has_visible_child = True
-            break
-      component.sw_struct_empty = not has_visible_child
+def _elaborate_field_offsets(container):
+  """Compute offsets of register fields."""
+  for register in container.registers:
+      if register.fields:
+        running_offset = 0
+        for field in register.fields:
+          if field.offset is None:
+            field.offset = running_offset
+          else:
+            running_offset = field.offset
+          running_offset += field.width
 
 
 
-def _elaborate_struct_padding(container, container_address):
-  """Recursively compute firmware struct padding for software-visible components."""
-  # List components that appear in the C header struct (accessible by software)
-  fw_components = []
-  for component in container.components:
-    if isinstance(component, Register):
-      if component.is_software_accessible():
-        fw_components.append(component)
-    elif isinstance(component, RegisterFile):
-      _elaborate_struct_padding(component, component.address)
-      if not component.sw_struct_empty:
-        fw_components.append(component)
-
-  # Sort by address
-  fw_components.sort(key=lambda component: component.address)
-
-  # Compute the padding
-  previous_end_address = container_address
-  for component in fw_components:
-    component.sw_struct_padding = (component.address - previous_end_address) // 4
-    if isinstance(component, RegisterFile):
-      previous_end_address = component.address + component.size
-    else:
-      previous_end_address = component.address + 4
-
-
-
-def elaborate(self):
-  """Elaborate the data structure after configuration and before generation."""
-  # Resolve addresses recursively
-  _elaborate_addresses(self, 0)
-
-  # Resolve hierarchical names recursively
-  _elaborate_hierarchical_names(self, "")
-
-  # Separate registers and files recursively
-  self.registers = self.get_registers_deep()
-  self.files     = self.get_files_deep()
-
-  # Bit offset and padding of each register field
-  for register in self.registers:
-    if register.fields:
-      running_offset = 0
-      for field in register.fields:
-        if field.offset is None:
-          field.offset = running_offset
-        else:
-          running_offset = field.offset
-        running_offset += field.width
-
-  # Access policy between fields and registers
-  for register in self.registers:
+def _elaborate_access_policies(container):
+  """Compute software and hardware access policies for registers and fields."""
+  for register in container.registers:
     # If the register has fields, for fields that do have a specified access policy,
     # they take the policy of their register, or the default if the register also
     # doesn't have an explicit policy.
@@ -178,17 +118,57 @@ def elaborate(self):
             HardwareAccessType.READ_WRITE : HardwareAccessType.READ_WRITE,
           }[register.hardware_access]
 
-  # Compute which register files are empty in the firmware struct
-  _elaborate_file_emptiness(self)
 
-  # Padding before each register and file for the firmware struct header.
-  # Computed recursively per container : only direct children appear
-  # in a container's struct, and sub-files are recursed into for their own
-  # internal padding.
-  _elaborate_struct_padding(self, 0)
 
-  # Padding before each field for the firmware bitfield struct
-  for register in self.registers:
+def _elaborate_file_emptiness(container):
+  """Recursively determine which register files are empty in the firmware struct."""
+  for component in container.components:
+    if isinstance(component, RegisterFile):
+      _elaborate_file_emptiness(component)
+      has_visible_child = False
+      for child in component.components:
+        if isinstance(child, Register):
+          if child.is_software_accessible():
+            has_visible_child = True
+            break
+        elif isinstance(child, RegisterFile):
+          if not child.sw_struct_empty:
+            has_visible_child = True
+            break
+      component.sw_struct_empty = not has_visible_child
+
+
+
+def _elaborate_component_padding(container, container_address):
+  """Recursively compute firmware struct padding for software-visible registers and files."""
+  # List components that appear in the C header struct (accessible by software)
+  fw_components = []
+  for component in container.components:
+    if isinstance(component, Register):
+      if component.is_software_accessible():
+        fw_components.append(component)
+    elif isinstance(component, RegisterFile):
+      _elaborate_component_padding(component, component.address)
+      if not component.sw_struct_empty:
+        fw_components.append(component)
+
+  # Sort by address
+  fw_components.sort(key=lambda component: component.address)
+
+  # Compute the padding
+  previous_end_address = container_address
+  for component in fw_components:
+    component.sw_struct_padding = (component.address - previous_end_address) // 4
+    if isinstance(component, RegisterFile):
+      previous_end_address = component.address + component.size
+    else:
+      previous_end_address = component.address + 4
+
+
+
+def _elaborate_field_padding(container):
+  """Compute firmware struct padding for software-visible fields."""
+  for register in container.registers:
     if register.fields:
       previous_offset = 0
       for field in register.fields:
@@ -196,3 +176,33 @@ def elaborate(self):
           field.sw_struct_padding = field.offset - previous_offset
           previous_offset = field.offset + field.width
       register.sw_struct_fields_padding = 32 - previous_offset
+
+
+
+def elaborate(self):
+  """Elaborate the data structure after configuration and before generation."""
+
+  # Resolve addresses recursively
+  _elaborate_addresses(self, 0)
+
+  # Resolve hierarchical names recursively
+  _elaborate_hierarchical_names(self, "")
+
+  # Separate registers and files recursively
+  self.registers = self.get_registers_deep()
+  self.files     = self.get_files_deep()
+
+  # Bit offset and padding of each register field
+  _elaborate_field_offsets(self)
+
+  # Access policy between fields and registers
+  _elaborate_access_policies(self)
+
+  # Compute which register files are empty in the firmware struct
+  _elaborate_file_emptiness(self)
+
+  # Padding before each register and file for the firmware struct header
+  _elaborate_component_padding(self, 0)
+
+  # Padding before each field for the firmware bitfield struct
+  _elaborate_field_padding(self)
