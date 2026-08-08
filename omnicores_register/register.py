@@ -10,6 +10,7 @@
 
 
 from typing import Optional
+from j2gpp.filters import humanize_title
 from omnicores_register.enums import SoftwareAccessType, HardwareAccessType
 from omnicores_register.field import Field
 
@@ -19,6 +20,8 @@ class Register:
   def __init__(
       self,
       name            : str,
+      title           : Optional[str]                = None,
+      description     : Optional[str]                = "",
       width           : int                          = 32,
       offset          : Optional[int]                = None,
       reset_value     : Optional[int]                = 0,
@@ -34,6 +37,10 @@ class Register:
     self.software_access   = software_access
     self.hardware_access   = hardware_access
     self.fields            = fields or []
+
+    # Human-readable documentation attributes
+    self.title       = title or humanize_title(name)
+    self.description = description or ""
 
     # Full hierarchical name including ancestor file names (computed during elaboration)
     self.hierarchical_name = None
@@ -63,3 +70,54 @@ class Register:
 
   def add_field(self, field:Field):
     self.fields.append(field)
+
+  def get_breadcrumbs(self):
+    """Return list for dotted breadcrumb navigation in HTML."""
+    parts = self.hierarchical_name.split('__')
+    breadcrumbs = []
+    for index in range(len(parts)):
+      prefix = '__'.join(parts[:index + 1])
+      if index < len(parts) - 1:
+        breadcrumbs.append({'name': parts[index], 'anchor': '#file-' + prefix})
+      else:
+        breadcrumbs.append({'name': parts[index], 'anchor': None})
+    return breadcrumbs
+
+  def get_bit_grid(self, bits_per_row=8):
+    """Return a list of rows for a visual bit-grid table, MSB to LSB."""
+    rows = []
+    for row_start in range(self.width - 1, -1, -bits_per_row):
+      if not self.fields:
+        row = [{
+          'name': self.name,
+          'colspan': min(bits_per_row, row_start + 1),
+          'is_field': True,
+          'most_significant_bit': row_start,
+          'least_significant_bit': max(row_start - bits_per_row + 1, 0),
+        }]
+      else:
+        row = []
+        for bit in range(row_start, max(row_start - bits_per_row, -1), -1):
+          owning_field = None
+          for candidate in self.fields:
+            if candidate.offset <= bit < candidate.offset + candidate.width:
+              owning_field = candidate
+              break
+
+          cell_name = owning_field.name if owning_field else ''
+
+          if not row or row[-1]['name'] != cell_name:
+            row.append({
+              'name': cell_name,
+              'colspan': 1,
+              'is_field': owning_field is not None,
+              'most_significant_bit': bit,
+              'least_significant_bit': bit,
+            })
+          else:
+            row[-1]['colspan'] += 1
+            row[-1]['least_significant_bit'] = bit
+
+      rows.append(row)
+
+    return rows

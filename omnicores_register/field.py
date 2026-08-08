@@ -10,6 +10,7 @@
 
 
 from typing import Optional
+from j2gpp.filters import humanize_title
 from omnicores_register.enums import SoftwareAccessType, HardwareAccessType
 
 
@@ -18,6 +19,8 @@ class Field:
   def __init__(
       self,
       name            : str,
+      title           : Optional[str]                = None,
+      description     : Optional[str]                = "",
       width           : int                          = 1,
       offset          : Optional[int]                = None,
       reset_value     : Optional[int]                = 0,
@@ -30,6 +33,10 @@ class Field:
     self.reset_value       = reset_value
     self.software_access   = software_access
     self.hardware_access   = hardware_access
+
+    # Human-readable documentation attributes
+    self.title       = title or humanize_title(name)
+    self.description = description or ""
 
     # Padding with previous field
     self.sw_struct_padding = 0

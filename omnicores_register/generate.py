@@ -14,6 +14,8 @@
 import j2gpp
 import importlib
 from pathlib import Path
+from omnicores_register.register import Register
+from omnicores_register.register_file import RegisterFile
 
 
 
@@ -59,6 +61,10 @@ def generate(self):
   # Pass the data structure to the render engine for use in templates
   render_engine.define_variable('register_bank', self)
 
+  # Pass some types used in certain templates
+  render_engine.define_variable('Register', Register)
+  render_engine.define_variable('RegisterFile', RegisterFile)
+
   # Path objects
   register_bank_name = f'{self.name}__register_bank'
   template_folder    = Path('templates')
@@ -70,3 +76,4 @@ def generate(self):
   render_template(render_engine, template_folder / 'testbench.sv.j2',     output_folder/ f'{register_bank_name}.testbench.sv')
   render_template(render_engine, template_folder / 'macros.h.j2',         output_folder/ f'{register_bank_name}.macros.h')
   render_template(render_engine, template_folder / 'structs.h.j2',        output_folder/ f'{register_bank_name}.structs.h')
+  render_template(render_engine, template_folder / 'documentation.html.j2', output_folder/ f'{register_bank_name}.html')

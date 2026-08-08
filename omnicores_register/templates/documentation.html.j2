@@ -1,0 +1,772 @@
+{%- macro hierarchical_navbar(container) -%}
+      <ul class="tree-level">
+      {%- for component in container.components %}
+        {%- if component is type(Register) %}
+        <li class="leaf">
+          <a class="mono" href="#register-{{component.hierarchical_name|escape}}">{{component.name}}</a>
+        </li>
+        {%- else %}
+        <li>
+          <details open>
+            <summary>
+              <a class="mono" href="#file-{{component.hierarchical_name|escape}}">{{component.name}}</a>
+            </summary>
+            {{ hierarchical_navbar(component) | indent(5) }}
+          </details>
+        </li>
+        {%- endif %}
+      {%- endfor %}
+      </ul>
+{%- endmacro -%}
+
+
+
+{%- macro render_detail(container) -%}
+  {%- for component in container.components %}
+    {%- if component is type(Register) %}
+
+    <section id="register-{{component.hierarchical_name|escape}}">
+      <h2>
+        <span class="component-address"><span class="mono copyable">0x{{component.address|hexadecimal}}</span></span>
+        <span class="component-breadcrumbs">
+        {%- for part in component.get_breadcrumbs() %}
+          {%- if not loop.last %}
+          {%- if part.anchor %}
+          <a class="mono" href="{{part.anchor}}">{{part.name}}</a>.
+          {%- else -%}
+          {{part.name}}.
+          {%- endif %}
+          {%- endif %}
+        {%- endfor -%}
+        </span>
+        <span class="component-name mono">{{component.name}}</span>
+      </h2>
+      <p class="component-title">{{component.title}}</p>
+
+      {%- if component.description %}
+      <p class="component-description">{{component.description}}</p>
+      {%- endif %}
+      <h3>Attributes</h3>
+      <table class="attributes">
+        {%- if component.hierarchical_name != component.name %}
+        <tr><td>Hierarchical Name</td><td class="mono">{{component.hierarchical_name}}</td></tr>
+        {%- endif %}
+        <tr><td>Width</td><td>{{component.width}} bits</td></tr>
+        <tr><td>Reset Value</td><td class="mono">{% if component.reset_value is not none %}<span class="copyable">0x{{component.reset_value|hexadecimal}}</span>{% else %}&mdash;{% endif %}</td></tr>
+        <tr><td>Software Access</td><td>{{component.software_access|repr}}</td></tr>
+        <tr><td>Hardware Access</td><td>{{component.hardware_access|repr}}</td></tr>
+      </table>
+
+      {%- if component.fields %}
+      <h3>Fields</h3>
+      <table class="fields">
+        <thead>
+          <tr>
+            <th class="column-bitslice">Bits</th>
+            <th>Name</th>
+            <th>Reset</th>
+            <th>Access</th>
+            <th class="column-description">Description</th>
+          </tr>
+        </thead>
+        <tbody>
+        {%- for field in component.fields %}
+          <tr>
+            <td class="mono column-bitslice"><span class="copyable">[{{field.offset + field.width - 1}}:{{field.offset}}]</span></td>
+            <td>
+              <strong class="mono">{{field.name}}</strong>
+              {%- if field.title != field.name %}
+              <br><span class="field-title">{{field.title}}</span>
+              {%- endif %}
+            </td>
+            <td class="mono">{% if field.reset_value is not none %}<span class="copyable">0x{{field.reset_value|hexadecimal}}</span>{% else %}&mdash;{% endif %}</td>
+            <td>
+              <span class="sw-access"></span>SW {{field.software_access|repr}}</span>
+              <br>
+              <span class="hw-access">HW {{field.hardware_access|repr}}</span>
+            </td>
+            <td class="column-description">{% if field.description %}{{field.description}}{% else %}&mdash;{% endif %}</td>
+          </tr>
+        {%- endfor -%}
+        </tbody>
+      </table>
+      {%- endif %}
+
+      {%- set bit_grid = component.get_bit_grid() %}
+      <h3>Bit Layout</h3>
+      <table class="bit-grid">
+        <colgroup>
+          {% for column in range(8) %}<col>{% endfor %}
+        </colgroup>
+        {%- for row in bit_grid %}
+        <tr>
+          {%- for cell in row %}
+          <td class="bit-cell {{'used' if cell.is_field else 'unused'}}" colspan="{{cell.colspan}}">
+            <span class="cell-name">{% if cell.is_field %}{{cell.name}}{% else %}&mdash;{% endif %}</span>
+            <span class="cell-range">[{{cell.most_significant_bit}}{% if cell.most_significant_bit != cell.least_significant_bit %}:{{cell.least_significant_bit}}{% endif %}]</span>
+          </td>
+          {%- endfor -%}
+        </tr>
+        {%- endfor -%}
+      </table>
+    </section>
+
+    {%- else %}
+
+    <section id="file-{{component.hierarchical_name|escape}}" class="file-section">
+      <h2>
+        <span class="component-address"><span class="mono copyable">0x{{component.address|hexadecimal}}</span> - <span class="mono copyable">0x{{(component.address + component.size)|hexadecimal}}</span></span>
+        <span class="component-breadcrumbs">
+        {%- for part in component.get_breadcrumbs() %}
+          {%- if not loop.last %}
+          {%- if part.anchor %}
+          <a class="mono" href="{{part.anchor}}">{{part.name}}</a>.
+          {%- else -%}
+          {{part.name}}.
+          {%- endif %}
+          {%- endif %}
+        {%- endfor -%}
+        </span>
+        <span class="component-name mono">{{component.name}}</span>
+      </h2>
+      <p class="component-title">{{component.title}}</p>
+      {%- if component.description %}
+      <p class="component-description">{{component.description}}</p>
+      {%- endif %}
+      <h3>Attributes</h3>
+      <table class="attributes">
+        {%- if component.hierarchical_name != component.name %}
+        <tr><td>Hierarchical Name</td><td class="mono">{{component.hierarchical_name}}</td></tr>
+        {%- endif %}
+        <tr><td>Base Address</td><td class="mono">0x{{component.address|hexadecimal}}</td></tr>
+        <tr><td>End Address</td><td class="mono">0x{{(component.address + component.size)|hexadecimal}}</td></tr>
+        <tr><td>Size</td><td><span class="mono">0x{{component.size|hexadecimal}}</span> ({{component.size}} bytes)</td></tr>
+      </table>
+
+      {%- if component.components %}
+      <h3>Direct Children</h3>
+      <table class="children">
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Address</th>
+            <th>Width / Size</th>
+          </tr>
+        </thead>
+        <tbody>
+        {%- for child in component.components %}
+          <tr>
+            <td><strong>
+              {%- if child is type(Register) %}
+              <a class="mono" href="#register-{{child.hierarchical_name|escape}}">{{child.name}}</a>
+              {%- else -%}
+              <a class="mono" href="#file-{{child.hierarchical_name|escape}}">{{child.name}}</a>
+              {%- endif %}
+            </strong></td>
+            <td>{% if child is type(Register) %}Register{% else %}Register File{% endif %}</td>
+            <td class="mono">0x{{child.address|hexadecimal}}</td>
+            <td class="mono">{% if child is type(Register) %}{{child.width}} bits{% else %}{{child.size}} bytes{% endif %}</td>
+          </tr>
+        {%- endfor -%}
+        </tbody>
+      </table>
+      {%- endif %}
+
+      {{ render_detail(component) | indent(2) }}
+
+    </section>
+
+    {%- endif %}
+  {%- endfor %}
+{%- endmacro -%}
+
+
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{register_bank.name}} - Register Bank Documentation</title>
+  <style>
+    :root {
+      --sidebar-width:         280px;
+      --color-bg:              #ffffff;
+      --color-sidebar-bg:      #f3f4f6;
+      --color-border:          #d4d8dd;
+      --color-text:            #2d2d2d;
+      --color-text-secondary:  #6b7280;
+      --color-heading:         #111827;
+      --color-heading-bg:      #f3f4f6;
+      --color-heading-border:  #e5e7eb;
+      --color-table-stripe:    #f9fafb;
+      --color-table-header:    #f3f4f6;
+      --color-table-border:    #e5e7eb;
+      --color-bar-field:       #dbeafe;
+      --color-bar-unused:      #f3f4f6;
+      --color-file-accent:     #e5e7eb;
+      --color-copied:          #dbeafe;
+    }
+
+    * {
+      box-sizing:  border-box;
+      margin:      0;
+      padding:     0;
+    }
+
+    body {
+      display:      flex;
+      font-family:  -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+      color:        var(--color-text);
+      line-height:  1.55;
+      height:       100vh;
+      background:   var(--color-bg);
+    }
+
+    /* Sidebar */
+
+    .sidebar {
+      display:         flex;
+      flex-direction:  column;
+      width:           var(--sidebar-width);
+      min-width:       var(--sidebar-width);
+      background:      var(--color-sidebar-bg);
+      border-right:    1px solid var(--color-border);
+      height:          100vh;
+      position:        relative;
+    }
+
+    .sidebar-header {
+      display:          flex;
+      align-items:      flex-start;
+      justify-content:  space-between;
+      flex-shrink:      0;
+      padding:          20px 16px 12px;
+      border-bottom:    1px solid var(--color-border);
+    }
+
+    .sidebar-header h1 {
+      font-size:    16px;
+      font-weight:  600;
+      color:        var(--color-heading);
+      word-break:   break-word;
+    }
+
+    .sidebar-header .subtitle {
+      font-size:       10px;
+      color:           var(--color-text-secondary);
+      text-transform:  uppercase;
+      letter-spacing:  1px;
+    }
+
+    .sidebar-header-text {
+      flex:       1;
+      min-width:  0;
+    }
+
+    .sidebar-toggle {
+      font-family:  -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+      flex-shrink:  0;
+      background:   none;
+      border:       none;
+      cursor:       pointer;
+      font-size:    14px;
+      padding:      0 2px;
+      margin-left:  4px;
+      color:        var(--color-text-secondary);
+      line-height:  1;
+    }
+    .sidebar-toggle:hover {
+      color: var(--color-text);
+    }
+
+    .sidebar-body {
+      flex:        1;
+      overflow-y:  auto;
+    }
+
+    /* Collapsed */
+
+    .sidebar.collapsed {
+      width:         0 !important;
+      min-width:     0 !important;
+      overflow:      hidden;
+      border-right:  none;
+    }
+
+    .sidebar-float {
+      font-family:      -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+      display:          none;
+      position:         fixed;
+      left:             0px;
+      top:              10px;
+      z-index:          100;
+      width:            32px;
+      height:           32px;
+      background:       var(--color-sidebar-bg);
+      border:           1px solid var(--color-border);
+      border-radius:    0px 4px 4px 0px;
+      cursor:           pointer;
+      font-size:        14px;
+      color:            var(--color-text-secondary);
+      box-shadow:       0 1px 4px rgba(0,0,0,0.1);
+      align-items:      center;
+      justify-content:  center;
+    }
+    .sidebar-float:hover {
+      color: var(--color-text);
+    }
+    .sidebar.collapsed + .sidebar-float {
+      display: flex;
+    }
+
+    /* Resize handle */
+
+    .sidebar-resize-handle {
+      position:  absolute;
+      right:     -3px;
+      top:       0;
+      width:     6px;
+      height:    100%;
+      cursor:    col-resize;
+      z-index:   1;
+    }
+    .sidebar.collapsed .sidebar-resize-handle { display: none; }
+
+    /* Tree */
+
+    .sidebar ul                   { list-style:    none;  }
+    .sidebar ul.tree-level        { padding-left:  18px;  }
+    .sidebar-body > ul.tree-level { padding-left:  0;     }
+    .sidebar details              { display:       block; }
+
+    .sidebar details > summary {
+      display:      block;
+      cursor:       pointer;
+      user-select:  none;
+      padding:      4px 8px;
+      font-size:    13px;
+      list-style:   none;
+    }
+
+    .sidebar details > summary::-webkit-details-marker { display: none; }
+
+    .sidebar details > summary::before {
+      content:       '\25B6';  /* Character "▸" */
+      color:         var(--color-text-secondary);
+      font-size:     10px;
+      display:       inline-block;
+      width:         12px;
+      margin-right:  2px;
+    }
+    .sidebar details[open] > summary::before {
+      content:       '\25BC';  /* Character "▾" */
+    }
+
+    .sidebar details > summary:hover         { background:    #e4e7ec; }
+    .sidebar details > ul                    { padding-left:  0;       }
+
+    .sidebar details a {
+      display:          inline;
+      text-decoration:  none;
+      color:            var(--color-text);
+      border:           none;
+      padding:          0;
+    }
+
+    .sidebar li.leaf a {
+      display:          block;
+      padding:          4px 8px;
+      font-size:        13px;
+      text-decoration:  none;
+      color:            var(--color-text);
+    }
+
+    .sidebar li.leaf a::before {
+      content:       '\25B8';
+      display:       inline-block;
+      width:         12px;
+      margin-right:  2px;
+      font-size:     12px;
+      visibility:    hidden;
+    }
+
+    .sidebar li.leaf a:hover { background: #e4e7ec; }
+
+    .sidebar .tree-bank-link {
+      display:          block;
+      padding:          5px 16px;
+      font-size:        13px;
+      font-weight:      500;
+      text-decoration:  none;
+      color:            var(--color-heading);
+      border-bottom:    1px solid var(--color-border);
+    }
+    .sidebar .tree-bank-link:hover { background: #e4e7ec; }
+
+    /* Main Content */
+
+    .content {
+      flex:        1;
+      overflow-y:  auto;
+      height:      100vh;
+      padding:     32px 40px;
+      max-width:   960px;
+    }
+
+    .content section {
+      scroll-margin-top:  24px;
+      margin-bottom:      48px;
+    }
+
+    section.file-section {
+      border-left:    3px solid var(--color-file-accent);
+      padding-left:   16px;
+      margin-top:     64px;
+      margin-bottom:  56px;
+    }
+
+    section.file-section h2 {
+      font-size:       22px;
+      font-weight:     700;
+    }
+
+    /* Headings */
+
+    .content h1 {
+      font-size:       26px;
+      margin-bottom:   6px;
+      color:           var(--color-heading);
+      border-bottom:   2px solid var(--color-border);
+      padding-bottom:  6px;
+    }
+
+    .content h2 {
+      margin-top:        28px;
+      margin-bottom:     2px;
+      font-size:         18px;
+      color:             var(--color-heading);
+      background-color:  var(--color-heading-bg);
+      padding:           3px 0px 3px 12px;
+      border-bottom:     3px solid var(--color-heading-border);
+    }
+
+    .component-address {
+      font-size:      1.0em;
+      font-weight:    400;
+      color:          var(--color-text-secondary);
+      padding-right:  4px;
+    }
+
+    .component-breadcrumbs {
+      font-size:    0.8em;
+      font-weight:  400;
+      color:        var(--color-text-secondary);
+    }
+
+    .component-name {
+      font-size:    1.0em;
+      font-weight:  600;
+      color:        var(--color-heading);
+    }
+
+    .component-title {
+      font-size:      14px;
+      color:          var(--color-text-secondary);
+      margin-bottom:  8px;
+      padding-left:   12px;
+    }
+
+    .breadcrumbs-dot { padding: 0 5px; }
+
+    .component-description {
+      font-size:      14px;
+      margin-bottom:  12px;
+      color:          var(--color-text);
+      max-width:      768px;
+    }
+
+    .content h3 {
+      font-size:      15px;
+      margin-top:     18px;
+      margin-bottom:  6px;
+      color:          var(--color-heading);
+    }
+
+    .content h3 {
+      font-size:       14px;
+      margin-top:      16px;
+      margin-bottom:   5px;
+      color:           var(--color-text-secondary);
+      text-transform:  uppercase;
+      letter-spacing:  1px;
+    }
+
+    /* Tables */
+
+    table {
+      width:            100%;
+      border-collapse:  collapse;
+      margin:           6px 0 16px;
+      font-size:        13px;
+    }
+
+    table.attributes td:first-child {
+      font-weight:    500;
+      color:          var(--color-text-secondary);
+      white-space:    nowrap;
+      padding-right:  32px;
+      width:          1px;
+    }
+
+    th, td {
+      text-align:      left;
+      padding:         7px 10px;
+      border-bottom:   1px solid var(--color-table-border);
+      vertical-align:  top;
+    }
+
+    thead th {
+      background:      var(--color-table-header);
+      font-weight:     600;
+      font-size:       11px;
+      text-transform:  uppercase;
+      letter-spacing:  0;
+      color:           var(--color-text-secondary);
+      border-bottom:   2px solid var(--color-table-border);
+    }
+
+    tbody tr:nth-child(even) { background: var(--color-table-stripe); }
+
+    .mono, .mono a {
+      font-family: 'SF Mono', 'Fira Code', 'Consolas', 'Monaco', monospace;
+    }
+
+    a {
+      color:           inherit;
+      text-decoration: none;
+      cursor:          pointer;
+    }
+    a:hover {
+      text-decoration: underline;
+    }
+
+    /* Index table */
+
+    table.index {
+      margin-top:     12px;
+      margin-bottom:  24px;
+    }
+
+    tr.index-file td {
+      font-size:       16px;
+      padding-top:     8px;
+      padding-bottom:  8px;
+    }
+    tr.index-file td:first-child {
+      padding-left: 16px;
+    }
+
+    /* Fields table */
+
+    .column-bitslice { width: 1px; white-space: nowrap; }
+    .column-description { min-width: 160px; }
+
+    .fields td { vertical-align: middle; }
+
+    .field-title {
+      font-size:  11px;
+      color:      var(--color-text-secondary);
+    }
+
+    .hw-access {
+      color:      var(--color-text-secondary);
+      font-size:  12px;
+    }
+
+    /* Bit grid */
+
+    .bit-grid {
+      border-collapse:  collapse;
+      margin:           8px 0 16px;
+      table-layout:     fixed;
+    }
+
+    .bit-grid td.bit-cell {
+      text-align:      center;
+      vertical-align:  middle;
+      padding:         8px 8px;
+      border:          1px solid var(--color-border);
+    }
+
+    .bit-cell.used   { background: var(--color-bar-field); }
+    .bit-cell.unused { background: var(--color-bar-unused); color: var(--color-text-secondary); }
+
+    .bit-cell .cell-name {
+      display:      block;
+      font-weight:  500;
+      font-size:    12px;
+      line-height:  1.25;
+      white-space:  nowrap;
+    }
+
+    .bit-cell .cell-range {
+      display:      block;
+      font-size:    10px;
+      color:        var(--color-text-secondary);
+      font-family:  'SF Mono', 'Fira Code', 'Consolas', monospace;
+      margin-top:   2px;
+    }
+
+    /* Click-to-copy */
+
+    .copyable {
+      cursor:         pointer;
+      transition:     background 0.12s;
+      border-radius:  2px;
+      padding:        0 1px;
+      margin:         0 -1px;
+    }
+    .copyable:hover  { background: #e8ecf0; }
+    .copyable.copied { background: var(--color-copied); }
+
+    /* Responsive */
+
+    @media (max-width: 768px) {
+      body { flex-direction: column; }
+      .sidebar {
+        width:          100%;
+        min-width:      100%;
+        height:         auto;
+        max-height:     40vh;
+        position:       relative;
+        border-right:   none;
+        border-bottom:  1px solid var(--color-border);
+      }
+      .sidebar-toggle { display: none; }
+      .sidebar-resize-handle { display: none; }
+      .sidebar-float { display: none !important; }
+      .content { height: auto; padding: 16px 20px; max-width: none; }
+    }
+
+  </style>
+</head>
+<body>
+
+  <nav class="sidebar">
+    <div class="sidebar-header">
+      <div class="sidebar-header-text">
+        <h1>{{register_bank.name}}</h1>
+        <span class="subtitle">Register Bank</span>
+      </div>
+      <button class="sidebar-toggle" title="Collapse sidebar">&#9664;</button>
+    </div>
+    <div class="sidebar-body">
+      <a class="tree-bank-link" href="#bank-overview">Overview</a>
+      {{ hierarchical_navbar(register_bank) }}
+    </div>
+    <div class="sidebar-resize-handle"></div>
+  </nav>
+
+  <button class="sidebar-float" title="Expand sidebar">&#9654;</button>
+
+  <main class="content">
+
+    <section id="bank-overview">
+      <h1>{{register_bank.name}} Register Bank</h1>
+      <h2>Register Map</h2>
+      <table class="index">
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Address</th>
+          </tr>
+        </thead>
+        <tbody>
+        {%- for component in register_bank.get_components_deep() %}
+          <tr class="{% if component.width is not defined %}index-file{% endif %}">
+            <td class="mono">
+              <a href="{% if component is type(Register) %}#register-{{component.hierarchical_name|escape}}{% else %}#file-{{component.hierarchical_name|escape}}{% endif %}">
+                {{component.hierarchical_name}}
+              </a>
+            </td>
+            <td class="mono"><span class="copyable">0x{{component.address|hexadecimal}}</span></td>
+          </tr>
+        {%- endfor -%}
+        </tbody>
+      </table>
+    </section>
+
+    {{ render_detail(register_bank) }}
+
+  </main>
+
+  <script>
+    var copyableElements = document.querySelectorAll('.copyable');
+    for (var index = 0; index < copyableElements.length; index++) {
+      var element = copyableElements[index];
+      element.title = 'Click to copy';
+      element.addEventListener('click', function() {
+        var text = this.textContent.trim();
+        navigator.clipboard.writeText(text).then(function() {
+          this.classList.add('copied');
+          var self = this;
+          setTimeout(function() { self.classList.remove('copied'); }, 700);
+        }.bind(this)).catch(function() {});
+      });
+    }
+
+    var sidebar       = document.querySelector('.sidebar');
+    var sidebarToggle = document.querySelector('.sidebar-toggle');
+    var sidebarFloat  = document.querySelector('.sidebar-float');
+    var sidebarWidth  = 280;
+
+    sidebarToggle.addEventListener('click', function() {
+      sidebarWidth = sidebar.offsetWidth;
+      sidebar.classList.add('collapsed');
+    });
+
+    sidebarFloat.addEventListener('click', function() {
+      sidebar.classList.remove('collapsed');
+      sidebar.style.width    = sidebarWidth + 'px';
+      sidebar.style.minWidth = sidebarWidth + 'px';
+      document.documentElement.style.setProperty('--sidebar-width', sidebarWidth + 'px');
+    });
+
+    var resizeHandle = document.querySelector('.sidebar-resize-handle');
+    var isResizing = false;
+    var startX;
+    var startWidth;
+
+    resizeHandle.addEventListener('mousedown', function(event) {
+      if (sidebar.classList.contains('collapsed')) return;
+      isResizing = true;
+      startX = event.clientX;
+      startWidth = sidebar.offsetWidth;
+      document.body.style.cursor = 'col-resize';
+      document.body.style.userSelect = 'none';
+      event.preventDefault();
+    });
+
+    document.addEventListener('mousemove', function(event) {
+      if (!isResizing) return;
+      var newWidth = startWidth + (event.clientX - startX);
+      if (newWidth < 150) newWidth = 150;
+      if (newWidth > 600) newWidth = 600;
+      sidebarWidth = newWidth;
+      sidebar.style.width    = newWidth + 'px';
+      sidebar.style.minWidth = newWidth + 'px';
+      document.documentElement.style.setProperty('--sidebar-width', newWidth + 'px');
+    });
+
+    document.addEventListener('mouseup', function() {
+      if (!isResizing) return;
+      isResizing = false;
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+    });
+  </script>
+
+</body>
+</html>

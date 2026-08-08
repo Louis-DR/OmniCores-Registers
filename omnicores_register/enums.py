@@ -18,6 +18,13 @@ class SoftwareAccessType(Enum):
   READ_ONLY  = auto()
   WRITE_ONLY = auto()
   READ_WRITE = auto()
+  def __repr__(self):
+    return {
+      'NONE':       "None",
+      'READ_ONLY':  "Read-only",
+      'WRITE_ONLY': "Write-only",
+      'READ_WRITE': "Read-write",
+    }[self.name]
 
 
 
@@ -26,6 +33,13 @@ class HardwareAccessType(Enum):
   READ_ONLY  = auto()
   WRITE_ONLY = auto()
   READ_WRITE = auto()
+  def __repr__(self):
+    return {
+      'NONE':       "None",
+      'READ_ONLY':  "Read-only",
+      'WRITE_ONLY': "Write-only",
+      'READ_WRITE': "Read-write",
+    }[self.name]
 
 
 
