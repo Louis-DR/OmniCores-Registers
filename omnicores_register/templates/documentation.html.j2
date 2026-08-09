@@ -27,19 +27,19 @@
 
     <section id="register-{{component.hierarchical_name|escape}}">
       <h2>
-        <span class="component-address"><span class="mono copyable">0x{{component.address|hexadecimal}}</span></span>
-        <span class="component-breadcrumbs">
-        {%- for part in component.get_breadcrumbs() %}
-          {%- if not loop.last %}
-          {%- if part.anchor %}
-          <a class="mono" href="{{part.anchor}}">{{part.name}}</a>.
-          {%- else -%}
-          {{part.name}}.
-          {%- endif %}
-          {%- endif %}
-        {%- endfor -%}
-        </span>
-        <span class="component-name mono">{{component.name}}</span>
+        <span class="component-address"><span class="mono copyable">0x{{component.address|hexadecimal}}</span></span><!--
+     --><span class="component-breadcrumbs"><!--
+          {%- for part in component.get_breadcrumbs() %}
+            {%- if not loop.last %}
+            {%- if part.anchor %}
+         --><a class="mono" href="{{part.anchor}}">{{part.name}}</a>.<!--
+            {%- else %}
+         -->{{part.name}}.<!--
+            {%- endif %}
+            {%- endif %}
+          {%- endfor %}
+     --></span><!--
+     --><span class="component-name mono">{{component.name}}</span>
       </h2>
       <p class="component-title">{{component.title}}</p>
 
@@ -115,19 +115,19 @@
 
     <section id="file-{{component.hierarchical_name|escape}}" class="file-section">
       <h2>
-        <span class="component-address"><span class="mono copyable">0x{{component.address|hexadecimal}}</span> - <span class="mono copyable">0x{{(component.address + component.size)|hexadecimal}}</span></span>
-        <span class="component-breadcrumbs">
-        {%- for part in component.get_breadcrumbs() %}
-          {%- if not loop.last %}
-          {%- if part.anchor %}
-          <a class="mono" href="{{part.anchor}}">{{part.name}}</a>.
-          {%- else -%}
-          {{part.name}}.
-          {%- endif %}
-          {%- endif %}
-        {%- endfor -%}
-        </span>
-        <span class="component-name mono">{{component.name}}</span>
+        <span class="component-address"><span class="mono copyable">0x{{component.address|hexadecimal}}</span> - <span class="mono copyable">0x{{(component.address + component.size)|hexadecimal}}</span></span><!--
+     --><span class="component-breadcrumbs"><!--
+          {%- for part in component.get_breadcrumbs() %}
+            {%- if not loop.last %}
+            {%- if part.anchor %}
+         --><a class="mono" href="{{part.anchor}}">{{part.name}}</a>.<!--
+            {%- else %}
+         -->{{part.name}}.<!--
+            {%- endif %}
+            {%- endif %}
+          {%- endfor %}
+     --></span><!--
+     --><span class="component-name mono">{{component.name}}</span>
       </h2>
       <p class="component-title">{{component.title}}</p>
       {%- if component.description %}
@@ -456,13 +456,14 @@
       font-size:      1.0em;
       font-weight:    400;
       color:          var(--color-text-secondary);
-      padding-right:  4px;
+      padding-right:  12px;
     }
 
     .component-breadcrumbs {
-      font-size:    0.8em;
-      font-weight:  400;
-      color:        var(--color-text-secondary);
+      font-size:      0.8em;
+      font-weight:    400;
+      color:          var(--color-text-secondary);
+      padding-right:  6px;
     }
 
     .component-name {
