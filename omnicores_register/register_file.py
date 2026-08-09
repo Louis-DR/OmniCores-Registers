@@ -14,6 +14,7 @@
 from typing import Optional
 from j2gpp.filters import humanize_title
 from omnicores_register.component_container import ComponentContainer
+from omnicores_register.enums import PackingPolicy, UNSPECIFIED
 
 
 
@@ -24,9 +25,10 @@ class RegisterFile(ComponentContainer):
       title       : Optional[str] = None,
       description : Optional[str] = "",
       offset      : Optional[int] = None,
-      align       : Optional[int] = None
+      align       : Optional[int] = None,
+      packing     : PackingPolicy = UNSPECIFIED,
     ):
-    super().__init__(name)
+    super().__init__(name, packing=packing)
     self.offset  = offset # Relative byte offset to the parent container (None for automatic)
     self.align   = align  # Align address to granularity
     self.address = None   # Absolute byte address, computed during elaboration
@@ -44,6 +46,9 @@ class RegisterFile(ComponentContainer):
 
     # Padding with previous register in the firmware struct header
     self.sw_struct_padding = 0
+
+    # Trailing padding to fill power-of-two file structs
+    self.sw_struct_tail_padding = 0
 
   def get_breadcrumbs(self):
     """Return list for dotted breadcrumb navigation in HTML."""

@@ -12,16 +12,19 @@
 
 
 from omnicores_register.register import Register
+from omnicores_register.enums import PackingPolicy, UNSPECIFIED
 
 
 
 class ComponentContainer:
   """Base class for register bank and register files which can both contain registers and sub-files."""
 
-  def __init__(self, name:str):
+  def __init__(self, name:str, packing:PackingPolicy=UNSPECIFIED):
     self.name = name
     # Shared list before elaboration to preserve insertion order of registers and files
     self.components = []
+    # Packing policy for this container and its children
+    self.packing = packing
 
   def add_file(self, file):
     """Add a register file to this container."""

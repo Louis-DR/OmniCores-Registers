@@ -11,16 +11,53 @@
 
 
 from math import ceil
+from omnicores_register.utils import next_power_of_two
 from omnicores_register.register_file import RegisterFile
 from omnicores_register.register import Register
 from omnicores_register.enums import (
   SoftwareAccessType,
   HardwareAccessType,
+  PackingPolicy,
+  UNSPECIFIED,
   register_default_software_access,
   register_default_hardware_access,
   field_default_software_access,
   field_default_hardware_access,
 )
+
+
+
+def _elaborate_inherited_settings(container, inherited_packing):
+  """Resolve the packing policy through the container hierarchy."""
+  # Resolve this container's effective packing for its children
+  resolved = container.packing
+  if resolved is UNSPECIFIED:
+    resolved = inherited_packing
+  if resolved is UNSPECIFIED:
+    resolved = PackingPolicy.DENSE
+
+  # For RegisterFiles, set their own packing attribute
+  if isinstance(container, RegisterFile):
+    container.packing = resolved
+
+  for component in container.components:
+    if isinstance(component, RegisterFile):
+      file_packing = component.packing
+      if file_packing is UNSPECIFIED:
+        file_packing = resolved
+      if file_packing is UNSPECIFIED:
+        file_packing = PackingPolicy.DENSE
+      component.packing = file_packing
+      _elaborate_inherited_settings(component, file_packing)
+
+
+
+def _shift_addresses(container, delta):
+  """Add delta to every component's absolute address in the subtree."""
+  for component in container.components:
+    component.address += delta
+    if isinstance(component, RegisterFile):
+      _shift_addresses(component, delta)
 
 
 
@@ -43,8 +80,23 @@ def _elaborate_addresses(container, container_base):
     if isinstance(component, RegisterFile):
       # The sub-file components offsets are relative to this file's base address
       end_address = _elaborate_addresses(component, component.address)
-      # The file region size is the bounding box of its children
-      component.size = end_address - component.address
+      # Compute the file region size based on the packing policy
+      dense_size = end_address - component.address
+      if component.packing == PackingPolicy.POWER_OF_TWO:
+        pow2_size = next_power_of_two(dense_size)
+        component.size = pow2_size
+        # Align the file base address to its size
+        # We need to resolve the children to know the size of the file for the
+        # alignment, but then we need to go back to the children to shift their
+        # addresses.
+        misalignment = component.address % pow2_size
+        if misalignment != 0:
+          delta = pow2_size - misalignment
+          component.address += delta
+          _shift_addresses(component, delta)
+          running_offset += delta
+      else:
+        component.size = dense_size
       running_offset += component.size
     # Each register occupies 4 bytes (32-bit word alignment)
     elif isinstance(component, Register):
@@ -168,6 +220,10 @@ def _elaborate_component_padding(container, container_address):
       previous_end_address = component.address + component.size
     else:
       previous_end_address = component.address + 4
+  # For power-of-two files, compute trailing reserved words to fill the struct
+  if isinstance(container, RegisterFile) and container.packing == PackingPolicy.POWER_OF_TWO:
+    file_end = container.address + container.size
+    container.sw_struct_tail_padding = (file_end - previous_end_address) // 4
 
 
 
@@ -186,6 +242,9 @@ def _elaborate_field_padding(container):
 
 def elaborate(self):
   """Elaborate the data structure after configuration and before generation."""
+
+  # Resolve packing policies
+  _elaborate_inherited_settings(self, UNSPECIFIED)
 
   # Resolve addresses recursively
   _elaborate_addresses(self, 0)

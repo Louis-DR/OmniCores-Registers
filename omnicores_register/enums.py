@@ -13,6 +13,11 @@ from enum import Enum, auto
 
 
 
+# Sentinel for unspecified settings
+UNSPECIFIED = object()
+
+
+
 class SoftwareAccessType(Enum):
   NONE       = auto()
   READ_ONLY  = auto()
@@ -48,3 +53,10 @@ register_default_software_access = SoftwareAccessType.READ_WRITE
 register_default_hardware_access = HardwareAccessType.READ_ONLY
 field_default_software_access    = SoftwareAccessType.READ_WRITE
 field_default_hardware_access    = HardwareAccessType.READ_ONLY
+
+
+
+class PackingPolicy(Enum):
+  """Controls register file address resolution and padding."""
+  DENSE        = auto()
+  POWER_OF_TWO = auto()

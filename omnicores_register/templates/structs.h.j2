@@ -89,6 +89,9 @@ typedef struct {{register_bank.name}}__{{file.hierarchical_name}} {
           {%- endif %}
         {%- endif %}
       {%- endfor %}
+      {%- if file.sw_struct_tail_padding > 0 %}
+        {§ align 1 §} uint32_t {§ align 2 §} _reserved{{reserved.increment_after()}}_[{{file.sw_struct_tail_padding}}];
+      {%- endif %}
     {%- endfilter %} {#- reindent #}
 } _STRUCT_ATTRIBUTES_ {{register_bank.name}}__{{file.hierarchical_name}};
 {§ spacing 3 §}
