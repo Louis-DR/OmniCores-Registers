@@ -183,48 +183,14 @@ def _elaborate_field_offsets(container):
 def _elaborate_access_policies(container):
   """Compute software and hardware access policies for registers and fields."""
   for register in container.registers:
-    # If the register has fields, for fields that do have a specified access policy,
-    # they take the policy of their register, or the default if the register also
-    # doesn't have an explicit policy.
     if register.fields:
       for field in register.fields:
         field.software_access = field.software_access or register.software_access or field_default_software_access
         field.hardware_access = field.hardware_access or register.hardware_access or field_default_hardware_access
     register.software_access = register.software_access or register_default_software_access
     register.hardware_access = register.hardware_access or register_default_hardware_access
-    # Upgrade register access policies according to its fields
     if register.fields:
-      for field in register.fields:
-        if field.is_software_writable():
-          register.software_access = {
-            SoftwareAccessType.NONE       : SoftwareAccessType.WRITE_ONLY,
-            SoftwareAccessType.READ_ONLY  : SoftwareAccessType.READ_WRITE,
-            SoftwareAccessType.WRITE_ONLY : SoftwareAccessType.WRITE_ONLY,
-            SoftwareAccessType.READ_WRITE : SoftwareAccessType.READ_WRITE,
-          }[register.software_access]
-        if field.is_software_readable():
-          register.software_access = {
-            SoftwareAccessType.NONE       : SoftwareAccessType.READ_ONLY,
-            SoftwareAccessType.READ_ONLY  : SoftwareAccessType.READ_ONLY,
-            SoftwareAccessType.WRITE_ONLY : SoftwareAccessType.READ_WRITE,
-            SoftwareAccessType.READ_WRITE : SoftwareAccessType.READ_WRITE,
-          }[register.software_access]
-        if field.is_hardware_writable():
-          register.hardware_access = {
-            HardwareAccessType.NONE       : HardwareAccessType.WRITE_ONLY,
-            HardwareAccessType.READ_ONLY  : HardwareAccessType.READ_WRITE,
-            HardwareAccessType.WRITE_ONLY : HardwareAccessType.WRITE_ONLY,
-            HardwareAccessType.READ_WRITE : HardwareAccessType.READ_WRITE,
-          }[register.hardware_access]
-        if field.is_hardware_readable():
-          register.hardware_access = {
-            HardwareAccessType.NONE       : HardwareAccessType.READ_ONLY,
-            HardwareAccessType.READ_ONLY  : HardwareAccessType.READ_ONLY,
-            HardwareAccessType.WRITE_ONLY : HardwareAccessType.READ_WRITE,
-            HardwareAccessType.READ_WRITE : HardwareAccessType.READ_WRITE,
-          }[register.hardware_access]
-
-  # Also resolve access on array register prototypes (not in the flat register list)
+      _upgrade_register_access_from_fields(register)
   _elaborate_array_prototype_access(container)
 
 
@@ -291,6 +257,27 @@ def _upgrade_register_access_from_fields(register):
 
 
 
+def _has_visible_child(container):
+  """Return True if the container has at least one software-visible direct child."""
+  for child in container.components:
+    if isinstance(child, ComponentArray):
+      child_proto = child.prototype
+      if isinstance(child_proto, Register):
+        if child_proto.is_software_accessible():
+          return True
+      elif isinstance(child_proto, RegisterFile):
+        if not child_proto.sw_struct_empty:
+          return True
+    elif isinstance(child, Register):
+      if child.is_software_accessible():
+        return True
+    elif isinstance(child, RegisterFile):
+      if not child.sw_struct_empty:
+        return True
+  return False
+
+
+
 def _elaborate_sw_struct_accessibility(container):
   """Recursively determine which register files are empty in the firmware struct."""
   for component in container.components:
@@ -298,50 +285,10 @@ def _elaborate_sw_struct_accessibility(container):
       prototype = component.prototype
       if isinstance(prototype, RegisterFile):
         _elaborate_sw_struct_accessibility(prototype)
-        has_visible_child = False
-        for child in prototype.components:
-          if isinstance(child, ComponentArray):
-            child_proto = child.prototype
-            if isinstance(child_proto, Register):
-              if child_proto.is_software_accessible():
-                has_visible_child = True
-                break
-            elif isinstance(child_proto, RegisterFile):
-              if not child_proto.sw_struct_empty:
-                has_visible_child = True
-                break
-          elif isinstance(child, Register):
-            if child.is_software_accessible():
-              has_visible_child = True
-              break
-          elif isinstance(child, RegisterFile):
-            if not child.sw_struct_empty:
-              has_visible_child = True
-              break
-        prototype.sw_struct_empty = not has_visible_child
+        prototype.sw_struct_empty = not _has_visible_child(prototype)
     elif isinstance(component, RegisterFile):
       _elaborate_sw_struct_accessibility(component)
-      has_visible_child = False
-      for child in component.components:
-        if isinstance(child, ComponentArray):
-          child_proto = child.prototype
-          if isinstance(child_proto, Register):
-            if child_proto.is_software_accessible():
-              has_visible_child = True
-              break
-          elif isinstance(child_proto, RegisterFile):
-            if not child_proto.sw_struct_empty:
-              has_visible_child = True
-              break
-        elif isinstance(child, Register):
-          if child.is_software_accessible():
-            has_visible_child = True
-            break
-        elif isinstance(child, RegisterFile):
-          if not child.sw_struct_empty:
-            has_visible_child = True
-            break
-      component.sw_struct_empty = not has_visible_child
+      component.sw_struct_empty = not _has_visible_child(component)
 
 
 
@@ -366,9 +313,7 @@ def _elaborate_component_padding(container, container_address):
       _elaborate_component_padding(component, component.address)
       if not component.sw_struct_empty:
         fw_components.append(component)
-  # Sort by address
-  fw_components.sort(key=lambda component: component.address)
-  # Compute the padding
+  # Compute the padding (components are already in address order from elaboration)
   previous_end_address = container_address
   for component in fw_components:
     component.sw_struct_padding = (component.address - previous_end_address) // 4
