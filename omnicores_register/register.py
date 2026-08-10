@@ -52,6 +52,18 @@ class Register:
     # Padding after the last field to fill the register width
     self.sw_struct_fields_padding = 0
 
+    # Whether this register is part of an array (set during elaboration)
+    self.is_array_element = False
+    # Array element index (set during elaboration)
+    self.array_index = None
+
+  def as_array(self, length:int, stride:int=None):
+    """Create a ComponentArray for replication of this register."""
+    from omnicores_register.component_array import ComponentArray
+    if stride is not None:
+      raise ValueError("Register arrays do not support a custom stride. The stride is always 4 bytes.")
+    return ComponentArray(self, length=length, stride=4)
+
   def is_software_readable(self) -> bool:
     return self.software_access in [SoftwareAccessType.READ_ONLY, SoftwareAccessType.READ_WRITE]
 
@@ -79,10 +91,16 @@ class Register:
     breadcrumbs = []
     for index in range(len(parts)):
       prefix = '__'.join(parts[:index + 1])
+      part_name = parts[index]
+      # Convert underscore array-index suffix to bracket notation in all parts
+      if '_' in part_name:
+        base, _, suffix = part_name.rpartition('_')
+        if suffix.isdigit():
+          part_name = f"{base}[{suffix}]"
       if index < len(parts) - 1:
-        breadcrumbs.append({'name': parts[index], 'anchor': '#file-' + prefix})
+        breadcrumbs.append({'name': part_name, 'anchor': '#file-' + prefix})
       else:
-        breadcrumbs.append({'name': parts[index], 'anchor': None})
+        breadcrumbs.append({'name': part_name, 'anchor': None})
     return breadcrumbs
 
   def get_bit_grid(self, bits_per_row=8):

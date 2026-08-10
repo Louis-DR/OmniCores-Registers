@@ -50,14 +50,29 @@ class RegisterFile(ComponentContainer):
     # Trailing padding to fill power-of-two file structs
     self.sw_struct_tail_padding = 0
 
+    # Whether this file is part of an array (set during elaboration)
+    self.is_array_element = False
+    # Array element index (set during elaboration)
+    self.array_index = None
+
+  def as_array(self, length:int, stride:int=None):
+    """Create a ComponentArray for replication of this register file."""
+    from omnicores_register.component_array import ComponentArray
+    return ComponentArray(self, length=length, stride=stride)
+
   def get_breadcrumbs(self):
     """Return list for dotted breadcrumb navigation in HTML."""
     parts = self.hierarchical_name.split('__')
     breadcrumbs = []
     for index in range(len(parts)):
       prefix = '__'.join(parts[:index + 1])
+      part_name = parts[index]
+      if '_' in part_name:
+        base, _, suffix = part_name.rpartition('_')
+        if suffix.isdigit():
+          part_name = f"{base}[{suffix}]"
       if index < len(parts) - 1:
-        breadcrumbs.append({'name': parts[index], 'anchor': '#file-' + prefix})
+        breadcrumbs.append({'name': part_name, 'anchor': '#file-' + prefix})
       else:
-        breadcrumbs.append({'name': parts[index], 'anchor': None})
+        breadcrumbs.append({'name': part_name, 'anchor': None})
     return breadcrumbs

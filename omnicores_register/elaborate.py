@@ -14,6 +14,7 @@ from math import ceil
 from omnicores_register.utils import next_power_of_two
 from omnicores_register.register_file import RegisterFile
 from omnicores_register.register import Register
+from omnicores_register.component_array import ComponentArray
 from omnicores_register.enums import (
   SoftwareAccessType,
   HardwareAccessType,
@@ -35,13 +36,22 @@ def _elaborate_inherited_settings(container, inherited_packing):
     resolved = inherited_packing
   if resolved is UNSPECIFIED:
     resolved = PackingPolicy.DENSE
-
   # For RegisterFiles, set their own packing attribute
   if isinstance(container, RegisterFile):
     container.packing = resolved
-
+  # Iterate over sub-components
   for component in container.components:
-    if isinstance(component, RegisterFile):
+    if isinstance(component, ComponentArray):
+      # Resolve packing for the array prototype if it's a file
+      if isinstance(component.prototype, RegisterFile):
+        file_packing = component.prototype.packing
+        if file_packing is UNSPECIFIED:
+          file_packing = resolved
+        if file_packing is UNSPECIFIED:
+          file_packing = PackingPolicy.DENSE
+        component.prototype.packing = file_packing
+        _elaborate_inherited_settings(component.prototype, file_packing)
+    elif isinstance(component, RegisterFile):
       file_packing = component.packing
       if file_packing is UNSPECIFIED:
         file_packing = resolved
@@ -76,8 +86,37 @@ def _elaborate_addresses(container, container_base):
     # The absolute address is the container base plus the relative offset
     component.address = container_base + running_offset
     # TODO: check that the address is aligned to the register width
+    # Handle array of registers or files
+    if isinstance(component, ComponentArray):
+      prototype = component.prototype
+      if isinstance(prototype, RegisterFile):
+        # Elaborate the prototype to determine its internal size
+        end_address = _elaborate_addresses(prototype, component.address)
+        dense_size = end_address - component.address
+        if prototype.packing == PackingPolicy.POWER_OF_TWO:
+          pow2_size = next_power_of_two(dense_size)
+          prototype.size = pow2_size
+          # Again we need to realign and therefore shift components
+          misalignment = component.address % pow2_size
+          if misalignment != 0:
+            delta = pow2_size - misalignment
+            component.address += delta
+            _shift_addresses(prototype, delta)
+            running_offset += delta
+        else:
+          prototype.size = dense_size
+        # If stride not specified, default to the prototype size
+        if component._stride is None:
+          component._stride = prototype.size
+        running_offset += component.region_size
+      elif isinstance(prototype, Register):
+        if component._stride is None:
+          component._stride = 4
+        running_offset += component.region_size
+      # Sync prototype base address after any alignment shifts
+      prototype.address = component.address
     # Recursively resolve the addresses for sub-files
-    if isinstance(component, RegisterFile):
+    elif isinstance(component, RegisterFile):
       # The sub-file components offsets are relative to this file's base address
       end_address = _elaborate_addresses(component, component.address)
       # Compute the file region size based on the packing policy
@@ -108,7 +147,15 @@ def _elaborate_addresses(container, container_base):
 def _elaborate_hierarchical_names(container, parent_prefix):
   """Recursively compute hierarchical names for all registers and files."""
   for component in container.components:
-    if isinstance(component, RegisterFile):
+    if isinstance(component, ComponentArray):
+      prototype = component.prototype
+      # Compute the base hierarchical name for the prototype
+      prefix = f"{parent_prefix}__{prototype.name}" if parent_prefix else prototype.name
+      prototype.hierarchical_name = prefix
+      # If the prototype is a file, recurse into its children
+      if isinstance(prototype, RegisterFile):
+        _elaborate_hierarchical_names(prototype, prefix)
+    elif isinstance(component, RegisterFile):
       prefix = f"{parent_prefix}__{component.name}" if parent_prefix else component.name
       component.hierarchical_name = prefix
       _elaborate_hierarchical_names(component, prefix)
@@ -177,16 +224,116 @@ def _elaborate_access_policies(container):
             HardwareAccessType.READ_WRITE : HardwareAccessType.READ_WRITE,
           }[register.hardware_access]
 
+  # Also resolve access on array register prototypes (not in the flat register list)
+  _elaborate_array_prototype_access(container)
 
 
-def _elaborate_file_emptiness(container):
+
+def _elaborate_array_prototype_access(container):
+  """Resolve access policies on register prototypes inside ComponentArray wrappers."""
+  for component in container.components:
+    if isinstance(component, ComponentArray):
+      prototype = component.prototype
+      if isinstance(prototype, Register):
+        prototype.software_access = prototype.software_access or register_default_software_access
+        prototype.hardware_access = prototype.hardware_access or register_default_hardware_access
+        if prototype.fields:
+          for field in prototype.fields:
+            field.software_access = field.software_access or prototype.software_access or field_default_software_access
+            field.hardware_access = field.hardware_access or prototype.hardware_access or field_default_hardware_access
+          _upgrade_register_access_from_fields(prototype)
+      elif isinstance(prototype, RegisterFile):
+        _elaborate_array_prototype_access(prototype)
+    elif isinstance(component, Register):
+      component.software_access = component.software_access or register_default_software_access
+      component.hardware_access = component.hardware_access or register_default_hardware_access
+      if component.fields:
+        for field in component.fields:
+          field.software_access = field.software_access or component.software_access or field_default_software_access
+          field.hardware_access = field.hardware_access or component.hardware_access or field_default_hardware_access
+        _upgrade_register_access_from_fields(component)
+    elif isinstance(component, RegisterFile):
+      _elaborate_array_prototype_access(component)
+
+
+
+def _upgrade_register_access_from_fields(register):
+  """Upgrade register access policies based on the access capabilities of its fields."""
+  for field in register.fields:
+    if field.is_software_writable():
+      register.software_access = {
+        SoftwareAccessType.NONE       : SoftwareAccessType.WRITE_ONLY,
+        SoftwareAccessType.READ_ONLY  : SoftwareAccessType.READ_WRITE,
+        SoftwareAccessType.WRITE_ONLY : SoftwareAccessType.WRITE_ONLY,
+        SoftwareAccessType.READ_WRITE : SoftwareAccessType.READ_WRITE,
+      }[register.software_access]
+    if field.is_software_readable():
+      register.software_access = {
+        SoftwareAccessType.NONE       : SoftwareAccessType.READ_ONLY,
+        SoftwareAccessType.READ_ONLY  : SoftwareAccessType.READ_ONLY,
+        SoftwareAccessType.WRITE_ONLY : SoftwareAccessType.READ_WRITE,
+        SoftwareAccessType.READ_WRITE : SoftwareAccessType.READ_WRITE,
+      }[register.software_access]
+    if field.is_hardware_writable():
+      register.hardware_access = {
+        HardwareAccessType.NONE       : HardwareAccessType.WRITE_ONLY,
+        HardwareAccessType.READ_ONLY  : HardwareAccessType.READ_WRITE,
+        HardwareAccessType.WRITE_ONLY : HardwareAccessType.WRITE_ONLY,
+        HardwareAccessType.READ_WRITE : HardwareAccessType.READ_WRITE,
+      }[register.hardware_access]
+    if field.is_hardware_readable():
+      register.hardware_access = {
+        HardwareAccessType.NONE       : HardwareAccessType.READ_ONLY,
+        HardwareAccessType.READ_ONLY  : HardwareAccessType.READ_ONLY,
+        HardwareAccessType.WRITE_ONLY : HardwareAccessType.READ_WRITE,
+        HardwareAccessType.READ_WRITE : HardwareAccessType.READ_WRITE,
+      }[register.hardware_access]
+
+
+
+def _elaborate_sw_struct_accessibility(container):
   """Recursively determine which register files are empty in the firmware struct."""
   for component in container.components:
-    if isinstance(component, RegisterFile):
-      _elaborate_file_emptiness(component)
+    if isinstance(component, ComponentArray):
+      prototype = component.prototype
+      if isinstance(prototype, RegisterFile):
+        _elaborate_sw_struct_accessibility(prototype)
+        has_visible_child = False
+        for child in prototype.components:
+          if isinstance(child, ComponentArray):
+            child_proto = child.prototype
+            if isinstance(child_proto, Register):
+              if child_proto.is_software_accessible():
+                has_visible_child = True
+                break
+            elif isinstance(child_proto, RegisterFile):
+              if not child_proto.sw_struct_empty:
+                has_visible_child = True
+                break
+          elif isinstance(child, Register):
+            if child.is_software_accessible():
+              has_visible_child = True
+              break
+          elif isinstance(child, RegisterFile):
+            if not child.sw_struct_empty:
+              has_visible_child = True
+              break
+        prototype.sw_struct_empty = not has_visible_child
+    elif isinstance(component, RegisterFile):
+      _elaborate_sw_struct_accessibility(component)
       has_visible_child = False
       for child in component.components:
-        if isinstance(child, Register):
+        if isinstance(child, ComponentArray):
+          child_proto = child.prototype
+          if isinstance(child_proto, Register):
+            if child_proto.is_software_accessible():
+              has_visible_child = True
+              break
+          elif isinstance(child_proto, RegisterFile):
+            if not child_proto.sw_struct_empty:
+              has_visible_child = True
+              break
+        elif isinstance(child, Register):
           if child.is_software_accessible():
             has_visible_child = True
             break
@@ -203,7 +350,16 @@ def _elaborate_component_padding(container, container_address):
   # List components that appear in the C header struct (accessible by software)
   fw_components = []
   for component in container.components:
-    if isinstance(component, Register):
+    if isinstance(component, ComponentArray):
+      prototype = component.prototype
+      if isinstance(prototype, Register):
+        if prototype.is_software_accessible():
+          fw_components.append(component)
+      elif isinstance(prototype, RegisterFile):
+        _elaborate_component_padding(prototype, prototype.address)
+        if not prototype.sw_struct_empty:
+          fw_components.append(component)
+    elif isinstance(component, Register):
       if component.is_software_accessible():
         fw_components.append(component)
     elif isinstance(component, RegisterFile):
@@ -216,7 +372,9 @@ def _elaborate_component_padding(container, container_address):
   previous_end_address = container_address
   for component in fw_components:
     component.sw_struct_padding = (component.address - previous_end_address) // 4
-    if isinstance(component, RegisterFile):
+    if isinstance(component, ComponentArray):
+      previous_end_address = component.address + component.region_size
+    elif isinstance(component, RegisterFile):
       previous_end_address = component.address + component.size
     else:
       previous_end_address = component.address + 4
@@ -263,7 +421,7 @@ def elaborate(self):
   _elaborate_access_policies(self)
 
   # Compute which register files are empty in the firmware struct
-  _elaborate_file_emptiness(self)
+  _elaborate_sw_struct_accessibility(self)
 
   # Padding before each register and file for the firmware struct header
   _elaborate_component_padding(self, 0)

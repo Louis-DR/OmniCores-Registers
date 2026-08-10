@@ -16,6 +16,7 @@ import importlib
 from pathlib import Path
 from omnicores_register.register import Register
 from omnicores_register.register_file import RegisterFile
+from omnicores_register.component_array import ComponentArray
 
 
 
@@ -64,6 +65,7 @@ def generate(self):
   # Pass some types used in certain templates
   render_engine.define_variable('Register', Register)
   render_engine.define_variable('RegisterFile', RegisterFile)
+  render_engine.define_variable('ComponentArray', ComponentArray)
 
   # Path objects
   register_bank_name = f'{self.name}__register_bank'
