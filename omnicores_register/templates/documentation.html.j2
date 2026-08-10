@@ -59,13 +59,14 @@
 
       {%- if component.fields %}
       <h3>Fields</h3>
+      <div class="fields-wrapper">
       <table class="fields">
         <thead>
           <tr>
             <th class="column-bitslice">Bits</th>
-            <th>Name</th>
-            <th>Reset</th>
-            <th>Access</th>
+            <th class="column-name">Name</th>
+            <th class="column-reset">Reset</th>
+            <th class="column-access">Access</th>
             <th class="column-description">Description</th>
           </tr>
         </thead>
@@ -73,15 +74,15 @@
         {%- for field in component.fields %}
           <tr>
             <td class="mono column-bitslice"><span class="copyable">[{{field.offset + field.width - 1}}:{{field.offset}}]</span></td>
-            <td>
+            <td class="column-name">
               <strong class="mono">{{field.name}}</strong>
               {%- if field.title != field.name %}
               <br><span class="field-title">{{field.title}}</span>
               {%- endif %}
             </td>
-            <td class="mono">{% if field.reset_value is not none %}<span class="copyable">0x{{field.reset_value|hexadecimal}}</span>{% else %}&mdash;{% endif %}</td>
-            <td>
-              <span class="sw-access"></span>SW {{field.software_access|repr}}</span>
+            <td class="mono column-reset">{% if field.reset_value is not none %}<span class="copyable">0x{{field.reset_value|hexadecimal}}</span>{% else %}&mdash;{% endif %}</td>
+            <td class="column-access">
+              <span class="sw-access">SW {{field.software_access|repr}}</span>
               <br>
               <span class="hw-access">HW {{field.hardware_access|repr}}</span>
             </td>
@@ -90,6 +91,7 @@
         {%- endfor -%}
         </tbody>
       </table>
+      </div>
       {%- endif %}
 
       {%- set bit_grid = component.get_bit_grid() %}
@@ -306,7 +308,6 @@
       height:           32px;
       background:       var(--color-sidebar-bg);
       border:           1px solid var(--color-border);
-      border-radius:    0px 4px 4px 0px;
       cursor:           pointer;
       font-size:        14px;
       color:            var(--color-text-secondary);
@@ -571,8 +572,20 @@
 
     /* Fields table */
 
-    .column-bitslice { width: 1px; white-space: nowrap; }
-    .column-description { min-width: 160px; }
+    .fields-wrapper { container-type: inline-size; }
+
+    .column-bitslice    { white-space: nowrap; width: 1%;        }
+    .column-name        { white-space: nowrap; max-width: 180px; }
+    .column-reset       { white-space: nowrap; width: 1%;        }
+    .column-access      { white-space: nowrap;                   }
+    .column-description { /* takes remaining space */            }
+
+    @container (max-width: 599px) {
+      .column-name,
+      .column-access {
+        white-space: normal;
+      }
+    }
 
     .fields td { vertical-align: middle; }
 
