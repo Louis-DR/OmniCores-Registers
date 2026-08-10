@@ -18,28 +18,36 @@
 #define _{{register_bank.name|upper}}__REGISTER_BANK__MACROS_HEADER_
 
 
+
 {§ spacing 3 §}
 
 
 
 {%- filter align %}
 {%- filter reindent(0) %}
-  {%- for register in register_bank.registers %}
-    #define {{register_bank.name|upper}}__{{register.hierarchical_name|upper}}__ADDRESS § 0x{{register.address|hexadecimal}} §§
-    #define {{register_bank.name|upper}}__{{register.hierarchical_name|upper}}__WIDTH § {{register.width}} §§
-    #define {{register_bank.name|upper}}__{{register.hierarchical_name|upper}}__MASK § 0x{{(2**register.width-1)|hexadecimal}} §§
-    {%- if register.reset_value is not none %}
-      #define {{register_bank.name|upper}}__{{register.hierarchical_name|upper}}__RESET_VALUE § 0x{{register.reset_value|hexadecimal}} §§
-    {%- endif %} {#- register.reset_value #}
-    {% if register.fields %} {%- for field in register.fields %}
-      #define {{register_bank.name|upper}}__{{register.hierarchical_name|upper}}__{{field.name|upper}}__OFFSET § {{field.offset}} §§
-      #define {{register_bank.name|upper}}__{{register.hierarchical_name|upper}}__{{field.name|upper}}__WIDTH § {{field.width}} §§
-      #define {{register_bank.name|upper}}__{{register.hierarchical_name|upper}}__{{field.name|upper}}__MASK § 0x{{(2**field.offset*(2**field.width-1))|hexadecimal}} §§
-      {%- if field.reset_value is not none %}
-        #define {{register_bank.name|upper}}__{{register.hierarchical_name|upper}}__{{field.name|upper}}__RESET_VALUE § 0x{{field.reset_value|hexadecimal}} §§
-      {%- endif %} {#- field.reset_value #}
-    {% endfor %} {%- endif %} {#- fields #}
-  {%  endfor %} {#- registers #}
+  {%- for kind, entry in register_bank.get_register_macros_ordered() %}
+    {%- if kind == 'array_meta' %}
+      #define {{register_bank.name|upper}}__{{entry.prototype.hierarchical_name|upper}}__LENGTH § {{entry.length}} §§
+      #define {{register_bank.name|upper}}__{{entry.prototype.hierarchical_name|upper}}__STRIDE § 0x{{entry.stride|hexadecimal}} §§
+      #define {{register_bank.name|upper}}__{{entry.prototype.hierarchical_name|upper}}__BASE   § 0x{{entry.address|hexadecimal}} §§
+    {%- else %}
+      {%- set register = entry %}
+      #define {{register_bank.name|upper}}__{{register.hierarchical_name|upper}}__ADDRESS § 0x{{register.address|hexadecimal}} §§
+      #define {{register_bank.name|upper}}__{{register.hierarchical_name|upper}}__WIDTH   § {{register.width}} §§
+      #define {{register_bank.name|upper}}__{{register.hierarchical_name|upper}}__MASK    § 0x{{(2**register.width-1)|hexadecimal}} §§
+      {%- if register.reset_value is not none %}
+        #define {{register_bank.name|upper}}__{{register.hierarchical_name|upper}}__RESET_VALUE § 0x{{register.reset_value|hexadecimal}} §§
+      {%- endif %} {#- register.reset_value #}
+      {% if register.fields %} {%- for field in register.fields %}
+        #define {{register_bank.name|upper}}__{{register.hierarchical_name|upper}}__{{field.name|upper}}__OFFSET § {{field.offset}} §§
+        #define {{register_bank.name|upper}}__{{register.hierarchical_name|upper}}__{{field.name|upper}}__WIDTH  § {{field.width}} §§
+        #define {{register_bank.name|upper}}__{{register.hierarchical_name|upper}}__{{field.name|upper}}__MASK   § 0x{{(2**field.offset*(2**field.width-1))|hexadecimal}} §§
+        {%- if field.reset_value is not none %}
+          #define {{register_bank.name|upper}}__{{register.hierarchical_name|upper}}__{{field.name|upper}}__RESET_VALUE § 0x{{field.reset_value|hexadecimal}} §§
+        {%- endif %} {#- field.reset_value #}
+      {% endfor %} {%- endif %} {#- fields #}
+    {%- endif %}
+  {%  endfor %} {#- macros #}
 {%- endfilter %} {#- reindent #}
 {%- endfilter %} {#- align #}
 

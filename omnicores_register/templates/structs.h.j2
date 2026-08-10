@@ -29,6 +29,33 @@
 
 {# Registers with fields #}
 {%- for register in register_bank.registers %}
+{%- if not register.is_array_element and register.fields and register.is_software_accessible() %}
+typedef union {
+  volatile uint32_t _raw_;
+  struct {
+    {%- filter align %}
+    {%- filter reindent(2) %}
+      {%- for field in register.fields %}
+        {%- if field.is_software_accessible() %}
+          {%- if field.sw_struct_padding > 0 %}
+            § uint32_t § § : § {{field.sw_struct_padding}}; §§
+          {%- endif %}
+          volatile {% if not field.is_software_writable() %}const{% endif %} § uint32_t § {{field.name}} § : § {{field.width}}; §§
+        {%- endif %}
+      {%- endfor %}
+      {%- if register.sw_struct_fields_padding > 0 %}
+        § uint32_t § § : § {{register.sw_struct_fields_padding}}; §§
+      {%- endif %}
+    {%- endfilter %} {#- reindent #}
+    {%- endfilter %} {#- align #}
+  };
+} {{register_bank.name}}__{{register.hierarchical_name}};
+{§ spacing 3 §}
+{%- endif %}
+{%- endfor %}
+
+{# Array prototype registers with fields #}
+{%- for register in register_bank.get_array_prototype_registers() %}
 {%- if register.fields and register.is_software_accessible() %}
 typedef union {
   volatile uint32_t _raw_;
@@ -64,12 +91,33 @@ typedef union {
 {%- set file_postorder = register_bank.get_files_postorder() %}
 {%- if file_postorder %}
 {%- for file in file_postorder %}
-{%- if not file.sw_struct_empty %}
+{%- if not file.is_array_element and not file.sw_struct_empty %}
 typedef struct {{register_bank.name}}__{{file.hierarchical_name}} {
     {%- filter reindent(1) %}
     {%- set reserved = Accumulator() %}
       {%- for component in file.components %}
-        {%- if component.width is defined %}
+        {%- if component is type(ComponentArray) %}
+          {%- set proto = component.prototype %}
+          {%- if proto.width is defined %}
+            {%- if proto.is_software_accessible() %}
+              {%- if component.sw_struct_padding > 0 %}
+                {§ align 1 §} uint32_t {§ align 2 §} _reserved{{reserved.increment_after()}}_[{{component.sw_struct_padding}}];
+              {%- endif %}
+              {%- if proto.fields %}
+                {{register_bank.name}}__{{proto.hierarchical_name}} {§ align 2 §} {{proto.name}}[{{component.length}}];
+              {%- else %}
+                volatile {% if not proto.is_software_writable() %}const{% endif %} {§ align 1 §} uint32_t {§ align 2 §} {{proto.name}}[{{component.length}}];
+              {%- endif %}
+            {%- endif %}
+          {%- else %}
+            {%- if not proto.sw_struct_empty %}
+              {%- if component.sw_struct_padding > 0 %}
+                {§ align 1 §} uint32_t {§ align 2 §} _reserved{{reserved.increment_after()}}_[{{component.sw_struct_padding}}];
+              {%- endif %}
+              {{register_bank.name}}__{{proto.hierarchical_name}} {§ align 2 §} {{proto.name}}[{{component.length}}];
+            {%- endif %}
+          {%- endif %}
+        {%- elif component.width is defined %}
           {%- if component.is_software_accessible() %}
             {%- if component.sw_struct_padding > 0 %}
               {§ align 1 §} uint32_t {§ align 2 §} _reserved{{reserved.increment_after()}}_[{{component.sw_struct_padding}}];
@@ -100,6 +148,63 @@ typedef struct {{register_bank.name}}__{{file.hierarchical_name}} {
 {§ spacing 3 §}
 {%- endif %}
 
+{# File array prototypes #}
+{%- for proto_file in register_bank.get_array_prototype_files() %}
+{%- if not proto_file.sw_struct_empty %}
+typedef struct {{register_bank.name}}__{{proto_file.hierarchical_name}} {
+    {%- filter reindent(1) %}
+    {%- set reserved = Accumulator() %}
+      {%- for component in proto_file.components %}
+        {%- if component is type(ComponentArray) %}
+          {%- set inner_proto = component.prototype %}
+          {%- if inner_proto.width is defined %}
+            {%- if inner_proto.is_software_accessible() %}
+              {%- if component.sw_struct_padding > 0 %}
+                {§ align 1 §} uint32_t {§ align 2 §} _reserved{{reserved.increment_after()}}_[{{component.sw_struct_padding}}];
+              {%- endif %}
+              {%- if inner_proto.fields %}
+                {{register_bank.name}}__{{inner_proto.hierarchical_name}} {§ align 2 §} {{inner_proto.name}}[{{component.length}}];
+              {%- else %}
+                volatile {% if not inner_proto.is_software_writable() %}const{% endif %} {§ align 1 §} uint32_t {§ align 2 §} {{inner_proto.name}}[{{component.length}}];
+              {%- endif %}
+            {%- endif %}
+          {%- else %}
+            {%- if not inner_proto.sw_struct_empty %}
+              {%- if component.sw_struct_padding > 0 %}
+                {§ align 1 §} uint32_t {§ align 2 §} _reserved{{reserved.increment_after()}}_[{{component.sw_struct_padding}}];
+              {%- endif %}
+              {{register_bank.name}}__{{inner_proto.hierarchical_name}} {§ align 2 §} {{inner_proto.name}}[{{component.length}}];
+            {%- endif %}
+          {%- endif %}
+        {%- elif component.width is defined %}
+          {%- if component.is_software_accessible() %}
+            {%- if component.sw_struct_padding > 0 %}
+              {§ align 1 §} uint32_t {§ align 2 §} _reserved{{reserved.increment_after()}}_[{{component.sw_struct_padding}}];
+            {%- endif %}
+            {%- if component.fields %}
+              {{register_bank.name}}__{{component.hierarchical_name}} {§ align 2 §} {{component.name}};
+            {%- else %}
+              volatile {% if not component.is_software_writable() %}const{% endif %} {§ align 1 §} uint32_t {§ align 2 §} {{component.name}};
+            {%- endif %}
+          {%- endif %}
+        {%- else %}
+          {%- if not component.sw_struct_empty %}
+            {%- if component.sw_struct_padding > 0 %}
+              {§ align 1 §} uint32_t {§ align 2 §} _reserved{{reserved.increment_after()}}_[{{component.sw_struct_padding}}];
+            {%- endif %}
+            {{register_bank.name}}__{{component.hierarchical_name}} {§ align 2 §} {{component.name}};
+          {%- endif %}
+        {%- endif %}
+      {%- endfor %}
+      {%- if proto_file.sw_struct_tail_padding > 0 %}
+        {§ align 1 §} uint32_t {§ align 2 §} _reserved{{reserved.increment_after()}}_[{{proto_file.sw_struct_tail_padding}}];
+      {%- endif %}
+    {%- endfilter %} {#- reindent #}
+} _STRUCT_ATTRIBUTES_ {{register_bank.name}}__{{proto_file.hierarchical_name}};
+{§ spacing 3 §}
+{%- endif %}
+{%- endfor %}
+
 
 
 {§ spacing 3 §}
@@ -112,7 +217,28 @@ typedef struct {{register_bank.name}}__register_bank {
   {%- filter reindent(1) %}
   {%- set reserved = Accumulator() %}
     {%- for component in register_bank.components %}
-      {%- if component.width is defined %}
+      {%- if component is type(ComponentArray) %}
+        {%- set proto = component.prototype %}
+        {%- if proto.width is defined %}
+          {%- if proto.is_software_accessible() %}
+            {%- if component.sw_struct_padding > 0 %}
+              {§ align 1 §} uint32_t {§ align 2 §} _reserved{{reserved.increment_after()}}_[{{component.sw_struct_padding}}];
+            {%- endif %}
+            {%- if proto.fields %}
+              {{register_bank.name}}__{{proto.hierarchical_name}} {§ align 2 §} {{proto.name}}[{{component.length}}];
+            {%- else %}
+              volatile {% if not proto.is_software_writable() %}const{% endif %} {§ align 1 §} uint32_t {§ align 2 §} {{proto.name}}[{{component.length}}];
+            {%- endif %}
+          {%- endif %}
+        {%- else %}
+          {%- if not proto.sw_struct_empty %}
+            {%- if component.sw_struct_padding > 0 %}
+              {§ align 1 §} uint32_t {§ align 2 §} _reserved{{reserved.increment_after()}}_[{{component.sw_struct_padding}}];
+            {%- endif %}
+            {{register_bank.name}}__{{proto.hierarchical_name}} {§ align 2 §} {{proto.name}}[{{component.length}}];
+          {%- endif %}
+        {%- endif %}
+      {%- elif component.width is defined %}
         {%- if component.is_software_accessible() %}
           {%- if component.sw_struct_padding > 0 %}
             {§ align 1 §} uint32_t {§ align 2 §} _reserved{{reserved.increment_after()}}_[{{component.sw_struct_padding}}];
