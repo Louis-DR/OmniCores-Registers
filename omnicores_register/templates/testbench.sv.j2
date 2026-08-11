@@ -108,7 +108,18 @@ module {{register_bank.name}}__register_bank__testbench;
     {%  for register in register_bank.registers %}
       {%- if register.fields %} {%- for field in register.fields %}
         {%- if field.is_hardware_readable() %}
-          logic {{field.width|arr}} register__{{register.hierarchical_name}}__{{field.name}};
+          {%- if field.has_hw_read_option(HardwareReadOptions.DATA) %}
+            logic {{field.width|arr}} register__{{register.hierarchical_name}}__{{field.name}};
+          {%- endif %}
+          {%- if field.has_hw_read_option(HardwareReadOptions.ANDED) %}
+            logic                     register__{{register.hierarchical_name}}__{{field.name}}__anded;
+          {%- endif %}
+          {%- if field.has_hw_read_option(HardwareReadOptions.ORED) %}
+            logic                     register__{{register.hierarchical_name}}__{{field.name}}__ored;
+          {%- endif %}
+          {%- if field.has_hw_read_option(HardwareReadOptions.XORED) %}
+            logic                     register__{{register.hierarchical_name}}__{{field.name}}__xored;
+          {%- endif %}
         {%- endif %}
         {%- if field.is_hardware_writable() %}
           {%- if field.has_hw_write_option(HardwareWriteOptions.ENABLE) %}
@@ -142,7 +153,18 @@ module {{register_bank.name}}__register_bank__testbench;
         {%- endif %}
       {%- endfor %} {%- else %}
         {%- if register.is_hardware_readable() %}
-          logic {{register.width|arr}} register__{{register.hierarchical_name}};
+          {%- if register.has_hw_read_option(HardwareReadOptions.DATA) %}
+            logic {{register.width|arr}} register__{{register.hierarchical_name}};
+          {%- endif %}
+          {%- if register.has_hw_read_option(HardwareReadOptions.ANDED) %}
+            logic                        register__{{register.hierarchical_name}}__anded;
+          {%- endif %}
+          {%- if register.has_hw_read_option(HardwareReadOptions.ORED) %}
+            logic                        register__{{register.hierarchical_name}}__ored;
+          {%- endif %}
+          {%- if register.has_hw_read_option(HardwareReadOptions.XORED) %}
+            logic                        register__{{register.hierarchical_name}}__xored;
+          {%- endif %}
         {%- endif %}
         {%- if register.is_hardware_writable() %}
           {%- if register.has_hw_write_option(HardwareWriteOptions.ENABLE) %}
@@ -201,7 +223,18 @@ module {{register_bank.name}}__register_bank__testbench;
     {%- for register in register_bank.registers %}
       {%- if register.fields %} {%- for field in register.fields %}
         {%- if field.is_hardware_readable() %}
-          .register__{{register.hierarchical_name}}__{{field.name}} ( register__{{register.hierarchical_name}}__{{field.name}} ),
+          {%- if field.has_hw_read_option(HardwareReadOptions.DATA) %}
+            .register__{{register.hierarchical_name}}__{{field.name}} ( register__{{register.hierarchical_name}}__{{field.name}} ),
+          {%- endif %}
+          {%- if field.has_hw_read_option(HardwareReadOptions.ANDED) %}
+            .register__{{register.hierarchical_name}}__{{field.name}}__anded ( register__{{register.hierarchical_name}}__{{field.name}}__anded ),
+          {%- endif %}
+          {%- if field.has_hw_read_option(HardwareReadOptions.ORED) %}
+            .register__{{register.hierarchical_name}}__{{field.name}}__ored ( register__{{register.hierarchical_name}}__{{field.name}}__ored ),
+          {%- endif %}
+          {%- if field.has_hw_read_option(HardwareReadOptions.XORED) %}
+            .register__{{register.hierarchical_name}}__{{field.name}}__xored ( register__{{register.hierarchical_name}}__{{field.name}}__xored ),
+          {%- endif %}
         {%- endif %}
         {%- if field.is_hardware_writable() %}
           {%- if field.has_hw_write_option(HardwareWriteOptions.ENABLE) %}
@@ -235,7 +268,18 @@ module {{register_bank.name}}__register_bank__testbench;
         {%- endif %}
       {%- endfor %} {%- else %}
         {%- if register.is_hardware_readable() %}
-          .register__{{register.hierarchical_name}} ( register__{{register.hierarchical_name}} ),
+          {%- if register.has_hw_read_option(HardwareReadOptions.DATA) %}
+            .register__{{register.hierarchical_name}} ( register__{{register.hierarchical_name}} ),
+          {%- endif %}
+          {%- if register.has_hw_read_option(HardwareReadOptions.ANDED) %}
+            .register__{{register.hierarchical_name}}__anded ( register__{{register.hierarchical_name}}__anded ),
+          {%- endif %}
+          {%- if register.has_hw_read_option(HardwareReadOptions.ORED) %}
+            .register__{{register.hierarchical_name}}__ored ( register__{{register.hierarchical_name}}__ored ),
+          {%- endif %}
+          {%- if register.has_hw_read_option(HardwareReadOptions.XORED) %}
+            .register__{{register.hierarchical_name}}__xored ( register__{{register.hierarchical_name}}__xored ),
+          {%- endif %}
         {%- endif %}
         {%- if register.is_hardware_writable() %}
           {%- if register.has_hw_write_option(HardwareWriteOptions.ENABLE) %}
@@ -385,12 +429,12 @@ module {{register_bank.name}}__register_bank__testbench;
     assert(field_sw_read_data === expected_data)
       else $error("[%t] Incorrect reset value read by software access for register field '{{register.hierarchical_name}}.{{field.name}}'. Expected '%0h' but got '%0h' instead.", $realtime, expected_data, field_sw_read_data);
     {%- endif %} {#- field.is_software_readable #}
-    {%- if field.is_hardware_readable() %}
+    {%- if field.has_hw_read_option(HardwareReadOptions.DATA) %}
     field_hw_read_data = register__{{register.hierarchical_name}}__{{field.name}};
     assert(field_hw_read_data === expected_data)
       else $error("[%t] Incorrect reset value read by hardware access for register field '{{register.hierarchical_name}}.{{field.name}}'. Expected '%0h' but got '%0h' instead.", $realtime, expected_data, field_hw_read_data);
     {%- endif %} {#- field.is_hardware_readable #}
-    {%- if field.is_software_readable() and field.is_hardware_readable() %}
+    {%- if field.is_software_readable() and field.has_hw_read_option(HardwareReadOptions.DATA) %}
     assert(field_hw_read_data === field_sw_read_data)
       else $error("[%t] Different values read by software and software access for register field '{{register.hierarchical_name}}.{{field.name}}'. Hardware reads '%0h' but software read '%0h'.", $realtime, field_hw_read_data, field_sw_read_data);
     {%- endif %} {#- field.is_software_readable and field.is_hardware_readable #}
@@ -404,12 +448,12 @@ module {{register_bank.name}}__register_bank__testbench;
     assert(register_sw_read_data === expected_data)
       else $error("[%t] Incorrect reset value read by software access for register '{{register.hierarchical_name}}'. Expected '%0h' but got '%0h' instead.", $realtime, expected_data, register_sw_read_data);
     {%- endif %} {#- register.is_software_readable #}
-    {%- if register.is_hardware_readable() %}
+    {%- if register.has_hw_read_option(HardwareReadOptions.DATA) %}
     register_hw_read_data = register__{{register.hierarchical_name}};
     assert(register_hw_read_data === expected_data)
       else $error("[%t] Incorrect reset value read by hardware access for register '{{register.hierarchical_name}}'. Expected '%0h' but got '%0h' instead.", $realtime, expected_data, register_hw_read_data);
     {%- endif %} {#- register.is_hardware_readable #}
-    {%- if register.is_software_readable() and register.is_hardware_readable() %}
+    {%- if register.is_software_readable() and register.has_hw_read_option(HardwareReadOptions.DATA) %}
     assert(register_hw_read_data === register_sw_read_data)
       else $error("[%t] Different values read by software and software access for register '{{register.hierarchical_name}}'. Hardware reads '%0h' but software read '%0h'.", $realtime, register_hw_read_data, register_sw_read_data);
     {%- endif %} {#- register.is_software_readable and register.is_hardware_readable #}
@@ -438,12 +482,12 @@ module {{register_bank.name}}__register_bank__testbench;
     assert(field_sw_read_data === expected_data)
       else $error("[%t] Incorrect value read by software access after writing all ones by software for register field '{{register.hierarchical_name}}.{{field.name}}'. Expected '%0h' but got '%0h' instead.", $realtime, expected_data, field_sw_read_data);
     {%- endif %} {#- field.is_software_readable #}
-    {%- if field.is_hardware_readable() %}
+    {%- if field.has_hw_read_option(HardwareReadOptions.DATA) %}
     field_hw_read_data = register__{{register.hierarchical_name}}__{{field.name}};
     assert(field_hw_read_data === expected_data)
       else $error("[%t] Incorrect value read by hardware access after writing all ones by software for register field '{{register.hierarchical_name}}.{{field.name}}'. Expected '%0h' but got '%0h' instead.", $realtime, expected_data, field_hw_read_data);
     {%- endif %} {#- field.is_hardware_readable #}
-    {%- if field.is_software_readable() and field.is_hardware_readable() %}
+    {%- if field.is_software_readable() and field.has_hw_read_option(HardwareReadOptions.DATA) %}
     assert(field_hw_read_data === field_sw_read_data)
       else $error("[%t] Different values read by software and software access for register field '{{register.hierarchical_name}}.{{field.name}}'. Hardware reads '%0h' but software read '%0h'.", $realtime, field_hw_read_data, field_sw_read_data);
     {%- endif %} {#- field.is_software_readable and field.is_hardware_readable #}
@@ -459,12 +503,12 @@ module {{register_bank.name}}__register_bank__testbench;
     assert(register_sw_read_data === expected_data)
       else $error("[%t] Incorrect value read by software access after writing all ones by software for register '{{register.hierarchical_name}}'. Expected '%0h' but got '%0h' instead.", $realtime, expected_data, register_sw_read_data);
     {%- endif %} {#- register.is_software_readable #}
-    {%- if register.is_hardware_readable() %}
+    {%- if register.has_hw_read_option(HardwareReadOptions.DATA) %}
     register_hw_read_data = register__{{register.hierarchical_name}};
     assert(register_hw_read_data === expected_data)
       else $error("[%t] Incorrect value read by hardware access after writing all ones by software for register '{{register.hierarchical_name}}'. Expected '%0h' but got '%0h' instead.", $realtime, expected_data, register_hw_read_data);
     {%- endif %} {#- register.is_hardware_readable #}
-    {%- if register.is_software_readable() and register.is_hardware_readable() %}
+    {%- if register.is_software_readable() and register.has_hw_read_option(HardwareReadOptions.DATA) %}
     assert(register_hw_read_data === register_sw_read_data)
       else $error("[%t] Different values read by software and software access for register '{{register.hierarchical_name}}'. Hardware reads '%0h' but software read '%0h'.", $realtime, register_hw_read_data, register_sw_read_data);
     {%- endif %} {#- register.is_software_readable and register.is_hardware_readable #}
@@ -493,12 +537,12 @@ module {{register_bank.name}}__register_bank__testbench;
     assert(field_sw_read_data === expected_data)
       else $error("[%t] Incorrect value read by software access after writing all zeros by software for register field '{{register.hierarchical_name}}.{{field.name}}'. Expected '%0h' but got '%0h' instead.", $realtime, expected_data, field_sw_read_data);
     {%- endif %} {#- field.is_software_readable #}
-    {%- if field.is_hardware_readable() %}
+    {%- if field.has_hw_read_option(HardwareReadOptions.DATA) %}
     field_hw_read_data = register__{{register.hierarchical_name}}__{{field.name}};
     assert(field_hw_read_data === expected_data)
       else $error("[%t] Incorrect value read by hardware access after writing all zeros by software for register field '{{register.hierarchical_name}}.{{field.name}}'. Expected '%0h' but got '%0h' instead.", $realtime, expected_data, field_hw_read_data);
     {%- endif %} {#- field.is_hardware_readable #}
-    {%- if field.is_software_readable() and field.is_hardware_readable() %}
+    {%- if field.is_software_readable() and field.has_hw_read_option(HardwareReadOptions.DATA) %}
     assert(field_hw_read_data === field_sw_read_data)
       else $error("[%t] Different values read by software and software access for register field '{{register.hierarchical_name}}.{{field.name}}'. Hardware reads '%0h' but software read '%0h'.", $realtime, field_hw_read_data, field_sw_read_data);
     {%- endif %} {#- field.is_software_readable and field.is_hardware_readable #}
@@ -514,12 +558,12 @@ module {{register_bank.name}}__register_bank__testbench;
     assert(register_sw_read_data === expected_data)
       else $error("[%t] Incorrect value read by software access after writing all zeros by software for register '{{register.hierarchical_name}}'. Expected '%0h' but got '%0h' instead.", $realtime, expected_data, register_sw_read_data);
     {%- endif %} {#- register.is_software_readable #}
-    {%- if register.is_hardware_readable() %}
+    {%- if register.has_hw_read_option(HardwareReadOptions.DATA) %}
     register_hw_read_data = register__{{register.hierarchical_name}};
     assert(register_hw_read_data === expected_data)
       else $error("[%t] Incorrect value read by hardware access after writing all zeros by software for register '{{register.hierarchical_name}}'. Expected '%0h' but got '%0h' instead.", $realtime, expected_data, register_hw_read_data);
     {%- endif %} {#- register.is_hardware_readable #}
-    {%- if register.is_software_readable() and register.is_hardware_readable() %}
+    {%- if register.is_software_readable() and register.has_hw_read_option(HardwareReadOptions.DATA) %}
     assert(register_hw_read_data === register_sw_read_data)
       else $error("[%t] Different values read by software and software access for register '{{register.hierarchical_name}}'. Hardware reads '%0h' but software read '%0h'.", $realtime, register_hw_read_data, register_sw_read_data);
     {%- endif %} {#- register.is_software_readable and register.is_hardware_readable #}
@@ -552,12 +596,12 @@ module {{register_bank.name}}__register_bank__testbench;
     assert(field_sw_read_data === expected_data)
       else $error("[%t] Incorrect value read by software access after writing all ones by hardware for register field '{{register.hierarchical_name}}.{{field.name}}'. Expected '%0h' but got '%0h' instead.", $realtime, expected_data, field_sw_read_data);
     {%- endif %} {#- field.is_software_readable #}
-    {%- if field.is_hardware_readable() %}
+    {%- if field.has_hw_read_option(HardwareReadOptions.DATA) %}
     field_hw_read_data = register__{{register.hierarchical_name}}__{{field.name}};
     assert(field_hw_read_data === expected_data)
       else $error("[%t] Incorrect value read by hardware access after writing all ones by hardware for register field '{{register.hierarchical_name}}.{{field.name}}'. Expected '%0h' but got '%0h' instead.", $realtime, expected_data, field_hw_read_data);
     {%- endif %} {#- field.is_hardware_readable #}
-    {%- if field.is_software_readable() and field.is_hardware_readable() %}
+    {%- if field.is_software_readable() and field.has_hw_read_option(HardwareReadOptions.DATA) %}
     assert(field_hw_read_data === field_sw_read_data)
       else $error("[%t] Different values read by software and software access for register field '{{register.hierarchical_name}}.{{field.name}}'. Hardware reads '%0h' but software read '%0h'.", $realtime, field_hw_read_data, field_sw_read_data);
     {%- endif %} {#- field.is_software_readable and field.is_hardware_readable #}
@@ -577,12 +621,12 @@ module {{register_bank.name}}__register_bank__testbench;
     assert(register_sw_read_data === expected_data)
       else $error("[%t] Incorrect value read by software access after writing all ones by hardware for register '{{register.hierarchical_name}}'. Expected '%0h' but got '%0h' instead.", $realtime, expected_data, register_sw_read_data);
     {%- endif %} {#- register.is_software_readable #}
-    {%- if register.is_hardware_readable() %}
+    {%- if register.has_hw_read_option(HardwareReadOptions.DATA) %}
     register_hw_read_data = register__{{register.hierarchical_name}};
     assert(register_hw_read_data === expected_data)
       else $error("[%t] Incorrect value read by hardware access after writing all ones by hardware for register '{{register.hierarchical_name}}'. Expected '%0h' but got '%0h' instead.", $realtime, expected_data, register_hw_read_data);
     {%- endif %} {#- register.is_hardware_readable #}
-    {%- if register.is_software_readable() and register.is_hardware_readable() %}
+    {%- if register.is_software_readable() and register.has_hw_read_option(HardwareReadOptions.DATA) %}
     assert(register_hw_read_data === register_sw_read_data)
       else $error("[%t] Different values read by software and software access for register '{{register.hierarchical_name}}'. Hardware reads '%0h' but software read '%0h'.", $realtime, register_hw_read_data, register_sw_read_data);
     {%- endif %} {#- register.is_software_readable and register.is_hardware_readable #}
@@ -615,12 +659,12 @@ module {{register_bank.name}}__register_bank__testbench;
     assert(field_sw_read_data === expected_data)
       else $error("[%t] Incorrect value read by software access after writing all zeros by hardware for register field '{{register.hierarchical_name}}.{{field.name}}'. Expected '%0h' but got '%0h' instead.", $realtime, expected_data, field_sw_read_data);
     {%- endif %} {#- field.is_software_readable #}
-    {%- if field.is_hardware_readable() %}
+    {%- if field.has_hw_read_option(HardwareReadOptions.DATA) %}
     field_hw_read_data = register__{{register.hierarchical_name}}__{{field.name}};
     assert(field_hw_read_data === expected_data)
       else $error("[%t] Incorrect value read by hardware access after writing all zeros by hardware for register field '{{register.hierarchical_name}}.{{field.name}}'. Expected '%0h' but got '%0h' instead.", $realtime, expected_data, field_hw_read_data);
     {%- endif %} {#- field.is_hardware_readable #}
-    {%- if field.is_software_readable() and field.is_hardware_readable() %}
+    {%- if field.is_software_readable() and field.has_hw_read_option(HardwareReadOptions.DATA) %}
     assert(field_hw_read_data === field_sw_read_data)
       else $error("[%t] Different values read by software and software access for register field '{{register.hierarchical_name}}.{{field.name}}'. Hardware reads '%0h' but software read '%0h'.", $realtime, field_hw_read_data, field_sw_read_data);
     {%- endif %} {#- field.is_software_readable and field.is_hardware_readable #}
@@ -640,12 +684,12 @@ module {{register_bank.name}}__register_bank__testbench;
     assert(register_sw_read_data === expected_data)
       else $error("[%t] Incorrect value read by software access after writing all zeros by hardware for register '{{register.hierarchical_name}}'. Expected '%0h' but got '%0h' instead.", $realtime, expected_data, register_sw_read_data);
     {%- endif %} {#- register.is_software_readable #}
-    {%- if register.is_hardware_readable() %}
+    {%- if register.has_hw_read_option(HardwareReadOptions.DATA) %}
     register_hw_read_data = register__{{register.hierarchical_name}};
     assert(register_hw_read_data === expected_data)
       else $error("[%t] Incorrect value read by hardware access after writing all zeros by hardware for register '{{register.hierarchical_name}}'. Expected '%0h' but got '%0h' instead.", $realtime, expected_data, register_hw_read_data);
     {%- endif %} {#- register.is_hardware_readable #}
-    {%- if register.is_software_readable() and register.is_hardware_readable() %}
+    {%- if register.is_software_readable() and register.has_hw_read_option(HardwareReadOptions.DATA) %}
     assert(register_hw_read_data === register_sw_read_data)
       else $error("[%t] Different values read by software and software access for register '{{register.hierarchical_name}}'. Hardware reads '%0h' but software read '%0h'.", $realtime, register_hw_read_data, register_sw_read_data);
     {%- endif %} {#- register.is_software_readable and register.is_hardware_readable #}
@@ -674,7 +718,7 @@ module {{register_bank.name}}__register_bank__testbench;
     assert(field_sw_read_data === expected_data)
       else $error("[%t] Incorrect value read after continuous write for register field '{{register.hierarchical_name}}.{{field.name}}'. Expected '%0h' but got '%0h' instead.", $realtime, expected_data, field_sw_read_data);
     {%- endif %} {#- field.is_software_readable #}
-    {%- if field.is_hardware_readable() %}
+    {%- if field.has_hw_read_option(HardwareReadOptions.DATA) %}
     field_hw_read_data = register__{{register.hierarchical_name}}__{{field.name}};
     assert(field_hw_read_data === expected_data)
       else $error("[%t] Incorrect hardware value after continuous write for register field '{{register.hierarchical_name}}.{{field.name}}'. Expected '%0h' but got '%0h' instead.", $realtime, expected_data, field_hw_read_data);
@@ -692,7 +736,7 @@ module {{register_bank.name}}__register_bank__testbench;
     assert(register_sw_read_data === expected_data)
       else $error("[%t] Incorrect value read after continuous write for register '{{register.hierarchical_name}}'. Expected '%0h' but got '%0h' instead.", $realtime, expected_data, register_sw_read_data);
     {%- endif %} {#- register.is_software_readable #}
-    {%- if register.is_hardware_readable() %}
+    {%- if register.has_hw_read_option(HardwareReadOptions.DATA) %}
     register_hw_read_data = register__{{register.hierarchical_name}};
     assert(register_hw_read_data === expected_data)
       else $error("[%t] Incorrect hardware value after continuous write for register '{{register.hierarchical_name}}'. Expected '%0h' but got '%0h' instead.", $realtime, expected_data, register_hw_read_data);
@@ -724,7 +768,7 @@ module {{register_bank.name}}__register_bank__testbench;
     assert(field_sw_read_data === expected_data)
       else $error("[%t] Incorrect value after set mask for register field '{{register.hierarchical_name}}.{{field.name}}'. Expected '%0h' but got '%0h' instead.", $realtime, expected_data, field_sw_read_data);
     {%- endif %} {#- field.is_software_readable #}
-    {%- if field.is_hardware_readable() %}
+    {%- if field.has_hw_read_option(HardwareReadOptions.DATA) %}
     field_hw_read_data = register__{{register.hierarchical_name}}__{{field.name}};
     assert(field_hw_read_data === expected_data)
       else $error("[%t] Incorrect hardware value after set mask for register field '{{register.hierarchical_name}}.{{field.name}}'. Expected '%0h' but got '%0h' instead.", $realtime, expected_data, field_hw_read_data);
@@ -742,7 +786,7 @@ module {{register_bank.name}}__register_bank__testbench;
     assert(register_sw_read_data === expected_data)
       else $error("[%t] Incorrect value after set mask for register '{{register.hierarchical_name}}'. Expected '%0h' but got '%0h' instead.", $realtime, expected_data, register_sw_read_data);
     {%- endif %} {#- register.is_software_readable #}
-    {%- if register.is_hardware_readable() %}
+    {%- if register.has_hw_read_option(HardwareReadOptions.DATA) %}
     register_hw_read_data = register__{{register.hierarchical_name}};
     assert(register_hw_read_data === expected_data)
       else $error("[%t] Incorrect hardware value after set mask for register '{{register.hierarchical_name}}'. Expected '%0h' but got '%0h' instead.", $realtime, expected_data, register_hw_read_data);
@@ -773,7 +817,7 @@ module {{register_bank.name}}__register_bank__testbench;
     assert(field_sw_read_data === expected_data)
       else $error("[%t] Incorrect value after set all for register field '{{register.hierarchical_name}}.{{field.name}}'. Expected '%0h' but got '%0h' instead.", $realtime, expected_data, field_sw_read_data);
     {%- endif %} {#- field.is_software_readable #}
-    {%- if field.is_hardware_readable() %}
+    {%- if field.has_hw_read_option(HardwareReadOptions.DATA) %}
     field_hw_read_data = register__{{register.hierarchical_name}}__{{field.name}};
     assert(field_hw_read_data === expected_data)
       else $error("[%t] Incorrect hardware value after set all for register field '{{register.hierarchical_name}}.{{field.name}}'. Expected '%0h' but got '%0h' instead.", $realtime, expected_data, field_hw_read_data);
@@ -791,7 +835,7 @@ module {{register_bank.name}}__register_bank__testbench;
     assert(register_sw_read_data === expected_data)
       else $error("[%t] Incorrect value after set all for register '{{register.hierarchical_name}}'. Expected '%0h' but got '%0h' instead.", $realtime, expected_data, register_sw_read_data);
     {%- endif %} {#- register.is_software_readable #}
-    {%- if register.is_hardware_readable() %}
+    {%- if register.has_hw_read_option(HardwareReadOptions.DATA) %}
     register_hw_read_data = register__{{register.hierarchical_name}};
     assert(register_hw_read_data === expected_data)
       else $error("[%t] Incorrect hardware value after set all for register '{{register.hierarchical_name}}'. Expected '%0h' but got '%0h' instead.", $realtime, expected_data, register_hw_read_data);
@@ -822,7 +866,7 @@ module {{register_bank.name}}__register_bank__testbench;
     assert(field_sw_read_data === expected_data)
       else $error("[%t] Incorrect value after clear mask for register field '{{register.hierarchical_name}}.{{field.name}}'. Expected '%0h' but got '%0h' instead.", $realtime, expected_data, field_sw_read_data);
     {%- endif %} {#- field.is_software_readable #}
-    {%- if field.is_hardware_readable() %}
+    {%- if field.has_hw_read_option(HardwareReadOptions.DATA) %}
     field_hw_read_data = register__{{register.hierarchical_name}}__{{field.name}};
     assert(field_hw_read_data === expected_data)
       else $error("[%t] Incorrect hardware value after clear mask for register field '{{register.hierarchical_name}}.{{field.name}}'. Expected '%0h' but got '%0h' instead.", $realtime, expected_data, field_hw_read_data);
@@ -840,7 +884,7 @@ module {{register_bank.name}}__register_bank__testbench;
     assert(register_sw_read_data === expected_data)
       else $error("[%t] Incorrect value after clear mask for register '{{register.hierarchical_name}}'. Expected '%0h' but got '%0h' instead.", $realtime, expected_data, register_sw_read_data);
     {%- endif %} {#- register.is_software_readable #}
-    {%- if register.is_hardware_readable() %}
+    {%- if register.has_hw_read_option(HardwareReadOptions.DATA) %}
     register_hw_read_data = register__{{register.hierarchical_name}};
     assert(register_hw_read_data === expected_data)
       else $error("[%t] Incorrect hardware value after clear mask for register '{{register.hierarchical_name}}'. Expected '%0h' but got '%0h' instead.", $realtime, expected_data, register_hw_read_data);
@@ -871,7 +915,7 @@ module {{register_bank.name}}__register_bank__testbench;
     assert(field_sw_read_data === expected_data)
       else $error("[%t] Incorrect value after clear all for register field '{{register.hierarchical_name}}.{{field.name}}'. Expected '%0h' but got '%0h' instead.", $realtime, expected_data, field_sw_read_data);
     {%- endif %} {#- field.is_software_readable #}
-    {%- if field.is_hardware_readable() %}
+    {%- if field.has_hw_read_option(HardwareReadOptions.DATA) %}
     field_hw_read_data = register__{{register.hierarchical_name}}__{{field.name}};
     assert(field_hw_read_data === expected_data)
       else $error("[%t] Incorrect hardware value after clear all for register field '{{register.hierarchical_name}}.{{field.name}}'. Expected '%0h' but got '%0h' instead.", $realtime, expected_data, field_hw_read_data);
@@ -889,7 +933,7 @@ module {{register_bank.name}}__register_bank__testbench;
     assert(register_sw_read_data === expected_data)
       else $error("[%t] Incorrect value after clear all for register '{{register.hierarchical_name}}'. Expected '%0h' but got '%0h' instead.", $realtime, expected_data, register_sw_read_data);
     {%- endif %} {#- register.is_software_readable #}
-    {%- if register.is_hardware_readable() %}
+    {%- if register.has_hw_read_option(HardwareReadOptions.DATA) %}
     register_hw_read_data = register__{{register.hierarchical_name}};
     assert(register_hw_read_data === expected_data)
       else $error("[%t] Incorrect hardware value after clear all for register '{{register.hierarchical_name}}'. Expected '%0h' but got '%0h' instead.", $realtime, expected_data, register_hw_read_data);
@@ -920,7 +964,7 @@ module {{register_bank.name}}__register_bank__testbench;
     assert(field_sw_read_data === expected_data)
       else $error("[%t] Incorrect value after hw reset for register field '{{register.hierarchical_name}}.{{field.name}}'. Expected '%0h' but got '%0h' instead.", $realtime, expected_data, field_sw_read_data);
     {%- endif %} {#- field.is_software_readable #}
-    {%- if field.is_hardware_readable() %}
+    {%- if field.has_hw_read_option(HardwareReadOptions.DATA) %}
     field_hw_read_data = register__{{register.hierarchical_name}}__{{field.name}};
     assert(field_hw_read_data === expected_data)
       else $error("[%t] Incorrect hardware value after hw reset for register field '{{register.hierarchical_name}}.{{field.name}}'. Expected '%0h' but got '%0h' instead.", $realtime, expected_data, field_hw_read_data);
@@ -938,7 +982,7 @@ module {{register_bank.name}}__register_bank__testbench;
     assert(register_sw_read_data === expected_data)
       else $error("[%t] Incorrect value after hw reset for register '{{register.hierarchical_name}}'. Expected '%0h' but got '%0h' instead.", $realtime, expected_data, register_sw_read_data);
     {%- endif %} {#- register.is_software_readable #}
-    {%- if register.is_hardware_readable() %}
+    {%- if register.has_hw_read_option(HardwareReadOptions.DATA) %}
     register_hw_read_data = register__{{register.hierarchical_name}};
     assert(register_hw_read_data === expected_data)
       else $error("[%t] Incorrect hardware value after hw reset for register '{{register.hierarchical_name}}'. Expected '%0h' but got '%0h' instead.", $realtime, expected_data, register_hw_read_data);
@@ -969,7 +1013,7 @@ module {{register_bank.name}}__register_bank__testbench;
     assert(field_sw_read_data === expected_data)
       else $error("[%t] Incorrect value after increment for register field '{{register.hierarchical_name}}.{{field.name}}'. Expected '%0h' but got '%0h' instead.", $realtime, expected_data, field_sw_read_data);
     {%- endif %} {#- field.is_software_readable #}
-    {%- if field.is_hardware_readable() %}
+    {%- if field.has_hw_read_option(HardwareReadOptions.DATA) %}
     field_hw_read_data = register__{{register.hierarchical_name}}__{{field.name}};
     assert(field_hw_read_data === expected_data)
       else $error("[%t] Incorrect hardware value after increment for register field '{{register.hierarchical_name}}.{{field.name}}'. Expected '%0h' but got '%0h' instead.", $realtime, expected_data, field_hw_read_data);
@@ -987,7 +1031,7 @@ module {{register_bank.name}}__register_bank__testbench;
     assert(register_sw_read_data === expected_data)
       else $error("[%t] Incorrect value after increment for register '{{register.hierarchical_name}}'. Expected '%0h' but got '%0h' instead.", $realtime, expected_data, register_sw_read_data);
     {%- endif %} {#- register.is_software_readable #}
-    {%- if register.is_hardware_readable() %}
+    {%- if register.has_hw_read_option(HardwareReadOptions.DATA) %}
     register_hw_read_data = register__{{register.hierarchical_name}};
     assert(register_hw_read_data === expected_data)
       else $error("[%t] Incorrect hardware value after increment for register '{{register.hierarchical_name}}'. Expected '%0h' but got '%0h' instead.", $realtime, expected_data, register_hw_read_data);
@@ -1018,7 +1062,7 @@ module {{register_bank.name}}__register_bank__testbench;
     assert(field_sw_read_data === expected_data)
       else $error("[%t] Incorrect value after decrement for register field '{{register.hierarchical_name}}.{{field.name}}'. Expected '%0h' but got '%0h' instead.", $realtime, expected_data, field_sw_read_data);
     {%- endif %} {#- field.is_software_readable #}
-    {%- if field.is_hardware_readable() %}
+    {%- if field.has_hw_read_option(HardwareReadOptions.DATA) %}
     field_hw_read_data = register__{{register.hierarchical_name}}__{{field.name}};
     assert(field_hw_read_data === expected_data)
       else $error("[%t] Incorrect hardware value after decrement for register field '{{register.hierarchical_name}}.{{field.name}}'. Expected '%0h' but got '%0h' instead.", $realtime, expected_data, field_hw_read_data);
@@ -1036,12 +1080,60 @@ module {{register_bank.name}}__register_bank__testbench;
     assert(register_sw_read_data === expected_data)
       else $error("[%t] Incorrect value after decrement for register '{{register.hierarchical_name}}'. Expected '%0h' but got '%0h' instead.", $realtime, expected_data, register_sw_read_data);
     {%- endif %} {#- register.is_software_readable #}
-    {%- if register.is_hardware_readable() %}
+    {%- if register.has_hw_read_option(HardwareReadOptions.DATA) %}
     register_hw_read_data = register__{{register.hierarchical_name}};
     assert(register_hw_read_data === expected_data)
       else $error("[%t] Incorrect hardware value after decrement for register '{{register.hierarchical_name}}'. Expected '%0h' but got '%0h' instead.", $realtime, expected_data, register_hw_read_data);
     {%- endif %} {#- register.is_hardware_readable #}
     {%- endif %} {#- register.is_hardware_writable and DECREMENT #}
+    {%- endif %} {#- fields #}
+    {%- endfor %} {#- registers #}
+
+    repeat(5) @(negedge control__pclock);
+
+
+    {§ spacing 2 §}
+
+
+    // Check 14 : Hardware read options (AND/OR/XOR reduction)
+    $display("CHECK 14 : Hardware read options.");
+    {%- for register in register_bank.registers %}
+    {%- if register.fields %} {%- for field in register.fields %}
+    {%- if field.has_hw_read_option(HardwareReadOptions.DATA) %}
+    {%- if field.has_hw_read_option(HardwareReadOptions.ANDED) %}
+    {§ spacing 1 §}
+    assert(register__{{register.hierarchical_name}}__{{field.name}}__anded === &register__{{register.hierarchical_name}}__{{field.name}})
+      else $error("[%t] Incorrect AND reduction for register field '{{register.hierarchical_name}}.{{field.name}}'. Expected '%0b' but got '%0b'.", $realtime, &register__{{register.hierarchical_name}}__{{field.name}}, register__{{register.hierarchical_name}}__{{field.name}}__anded);
+    {%- endif %}
+    {%- if field.has_hw_read_option(HardwareReadOptions.ORED) %}
+    {§ spacing 1 §}
+    assert(register__{{register.hierarchical_name}}__{{field.name}}__ored === |register__{{register.hierarchical_name}}__{{field.name}})
+      else $error("[%t] Incorrect OR reduction for register field '{{register.hierarchical_name}}.{{field.name}}'. Expected '%0b' but got '%0b'.", $realtime, |register__{{register.hierarchical_name}}__{{field.name}}, register__{{register.hierarchical_name}}__{{field.name}}__ored);
+    {%- endif %}
+    {%- if field.has_hw_read_option(HardwareReadOptions.XORED) %}
+    {§ spacing 1 §}
+    assert(register__{{register.hierarchical_name}}__{{field.name}}__xored === ^register__{{register.hierarchical_name}}__{{field.name}})
+      else $error("[%t] Incorrect XOR reduction for register field '{{register.hierarchical_name}}.{{field.name}}'. Expected '%0b' but got '%0b'.", $realtime, ^register__{{register.hierarchical_name}}__{{field.name}}, register__{{register.hierarchical_name}}__{{field.name}}__xored);
+    {%- endif %}
+    {%- endif %} {#- field.has_hw_read_option(DATA) #}
+    {%- endfor %} {%- else %} {#- fields #}
+    {%- if register.has_hw_read_option(HardwareReadOptions.DATA) %}
+    {%- if register.has_hw_read_option(HardwareReadOptions.ANDED) %}
+    {§ spacing 1 §}
+    assert(register__{{register.hierarchical_name}}__anded === &register__{{register.hierarchical_name}})
+      else $error("[%t] Incorrect AND reduction for register '{{register.hierarchical_name}}'. Expected '%0b' but got '%0b'.", $realtime, &register__{{register.hierarchical_name}}, register__{{register.hierarchical_name}}__anded);
+    {%- endif %}
+    {%- if register.has_hw_read_option(HardwareReadOptions.ORED) %}
+    {§ spacing 1 §}
+    assert(register__{{register.hierarchical_name}}__ored === |register__{{register.hierarchical_name}})
+      else $error("[%t] Incorrect OR reduction for register '{{register.hierarchical_name}}'. Expected '%0b' but got '%0b'.", $realtime, |register__{{register.hierarchical_name}}, register__{{register.hierarchical_name}}__ored);
+    {%- endif %}
+    {%- if register.has_hw_read_option(HardwareReadOptions.XORED) %}
+    {§ spacing 1 §}
+    assert(register__{{register.hierarchical_name}}__xored === ^register__{{register.hierarchical_name}})
+      else $error("[%t] Incorrect XOR reduction for register '{{register.hierarchical_name}}'. Expected '%0b' but got '%0b'.", $realtime, ^register__{{register.hierarchical_name}}, register__{{register.hierarchical_name}}__xored);
+    {%- endif %}
+    {%- endif %} {#- register.has_hw_read_option(DATA) #}
     {%- endif %} {#- fields #}
     {%- endfor %} {#- registers #}
 
