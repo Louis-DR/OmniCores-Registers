@@ -188,21 +188,73 @@ module {{register_bank.name}}__register_bank (
              && control__penable
              && control__pwrite ) begin
       case (control__paddr)
-        {%- filter align %}
+        {%- filter replace(" ;", ";") %}
+        {%- filter restructure %}
         {%- filter reindent(4) %}
           {%- for register in register_bank.registers %}
             {%- if register.fields %}
               {%- if register.is_software_writable() %}
-                32'h{{register.address|hexadecimal}} § : begin {%- for field in register.fields -%} {%- if field.is_software_writable() %} § register__{{register.hierarchical_name}}__{{field.name}}__storage § <= control__pwdata § [{{field.offset+field.width-1}}:{{field.offset}}]; §§ {{"end" if loop.last else "\n § "}} {%- endif -%} {%- endfor -%}
+                32'h{{register.address|hexadecimal}} {§ align §} : begin {%- for field in register.fields -%} {%- if field.is_software_writable() -%}
+                  {%- set file_name = "register__" ~ register.hierarchical_name ~ "__" ~ field.name ~ "__storage" -%}
+                  {%- if field.sw_write_behavior == SoftwareWriteBehavior.NORMAL -%}
+                    {§ align §} {{file_name}} {§ align §} <= control__pwdata {§ align §} [{{field.offset+field.width-1}}:{{field.offset}}]{§ align right §}; {{"end" if loop.last else "\n {§ align §} "}}
+                  {%- else -%}
+                    {%-   if field.sw_write_behavior == SoftwareWriteBehavior.WRITE_ONE_SETS -%}
+                      {%- set negate = "" -%}
+                      {%- set mask = " | " ~ file_name -%}
+                    {%- elif field.sw_write_behavior == SoftwareWriteBehavior.WRITE_ONE_CLEARS -%}
+                      {%- set negate = "~" -%}
+                      {%- set mask = " & " ~ file_name -%}
+                    {%- elif field.sw_write_behavior == SoftwareWriteBehavior.WRITE_ONE_TOGGLES -%}
+                      {%- set negate = "" -%}
+                      {%- set mask = " ^ " ~ file_name -%}
+                    {%- elif field.sw_write_behavior == SoftwareWriteBehavior.WRITE_ZERO_SETS -%}
+                      {%- set negate = "~" -%}
+                      {%- set mask = " | " ~ file_name -%}
+                    {%- elif field.sw_write_behavior == SoftwareWriteBehavior.WRITE_ZERO_CLEARS -%}
+                      {%- set negate = "" -%}
+                      {%- set mask = " & " ~ file_name -%}
+                    {%- elif field.sw_write_behavior == SoftwareWriteBehavior.WRITE_ZERO_TOGGLES -%}
+                      {%- set negate = "~" -%}
+                      {%- set mask = " ^ " ~ file_name -%}
+                    {%- endif -%}
+                    {§ align §} {{file_name}} {§ align §} <= {{negate}}control__pwdata {§ align §} [{{field.offset+field.width-1}}:{{field.offset}}] {§ align right §} {{mask}}; {{"end" if loop.last else "\n {§ align §} "}}
+                  {%- endif -%}
+                {%- endif -%} {%- endfor -%}
               {%- endif %}
             {%- else %}
               {%- if register.is_software_writable() %}
-                32'h{{register.address|hexadecimal}} § : § register__{{register.hierarchical_name}}__storage § <= control__pwdata § [{{register.width-1}}:0]; §§
-            {%- endif %}
+                {%- set register_name = "register__" ~ register.hierarchical_name ~ "__storage" -%}
+                {%- if register.sw_write_behavior == SoftwareWriteBehavior.NORMAL %}
+                  32'h{{register.address|hexadecimal}} {§ align §} : {§ align §} {{register_name}} {§ align §} <= control__pwdata {§ align §} [{{register.width-1}}:0]{§ align right §};
+                {%- else -%}
+                  {%-   if register.sw_write_behavior == SoftwareWriteBehavior.WRITE_ONE_SETS -%}
+                    {%- set negate = "" -%}
+                    {%- set mask = " | " ~ register_name -%}
+                  {%- elif register.sw_write_behavior == SoftwareWriteBehavior.WRITE_ONE_CLEARS -%}
+                    {%- set negate = "~" -%}
+                    {%- set mask = " & " ~ register_name -%}
+                  {%- elif register.sw_write_behavior == SoftwareWriteBehavior.WRITE_ONE_TOGGLES -%}
+                    {%- set negate = "" -%}
+                    {%- set mask = " ^ " ~ register_name -%}
+                  {%- elif register.sw_write_behavior == SoftwareWriteBehavior.WRITE_ZERO_SETS -%}
+                    {%- set negate = "~" -%}
+                    {%- set mask = " | " ~ register_name -%}
+                  {%- elif register.sw_write_behavior == SoftwareWriteBehavior.WRITE_ZERO_CLEARS -%}
+                    {%- set negate = "" -%}
+                    {%- set mask = " & " ~ register_name -%}
+                  {%- elif register.sw_write_behavior == SoftwareWriteBehavior.WRITE_ZERO_TOGGLES -%}
+                    {%- set negate = "~" -%}
+                    {%- set mask = " ^ " ~ register_name -%}
+                  {%- endif %}
+                  32'h{{register.address|hexadecimal}} {§ align §} : {§ align §} {{register_name}} {§ align §} <= {{negate}}control__pwdata {§ align §} [{{register.width-1}}:0] {§ align right §} {{mask}};
+                {%- endif %}
+              {%- endif %}
             {%- endif %}
           {%- endfor %}
         {%- endfilter %} {#- reindent #}
         {%- endfilter %} {#- align #}
+        {%- endfilter %} {#- replace #}
       endcase
     end
 

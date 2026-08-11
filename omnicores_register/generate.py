@@ -17,7 +17,7 @@ from pathlib import Path
 from omnicores_register.register import Register
 from omnicores_register.register_file import RegisterFile
 from omnicores_register.component_array import ComponentArray
-from omnicores_register.enums import HardwareWriteOptions, HardwareReadOptions
+from omnicores_register.enums import HardwareWriteOptions, HardwareReadOptions, SoftwareWriteBehavior, SoftwareReadBehavior
 
 
 
@@ -69,6 +69,8 @@ def generate(self):
   render_engine.define_variable('ComponentArray', ComponentArray)
   render_engine.define_variable('HardwareWriteOptions', HardwareWriteOptions)
   render_engine.define_variable('HardwareReadOptions', HardwareReadOptions)
+  render_engine.define_variable('SoftwareWriteBehavior', SoftwareWriteBehavior)
+  render_engine.define_variable('SoftwareReadBehavior', SoftwareReadBehavior)
 
   # Path objects
   register_bank_name = f'{self.name}__register_bank'
