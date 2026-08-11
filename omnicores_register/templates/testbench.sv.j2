@@ -471,7 +471,7 @@ module {{register_bank.name}}__register_bank__testbench;
     $display("CHECK 2 : Software write all ones.");
     {%- for register in register_bank.registers %}
     {%- if register.fields %} {%- for field in register.fields %}
-    {%- if field.is_software_writable() and not (field.has_hw_write_option(HardwareWriteOptions.CONTINUOUS) and not field.has_hw_write_option(HardwareWriteOptions.ENABLE)) %}
+    {%- if field.is_software_writable() and field.sw_write_behavior == SoftwareWriteBehavior.NORMAL and not (field.has_hw_write_option(HardwareWriteOptions.CONTINUOUS) and not field.has_hw_write_option(HardwareWriteOptions.ENABLE)) %}
     {§ spacing 1 §}
     expected_data = { {{field.width}} {1'b1}};
     register_sw_write_data = expected_data << register__{{register.hierarchical_name}}__{{field.name}}__offset;
@@ -493,7 +493,7 @@ module {{register_bank.name}}__register_bank__testbench;
     {%- endif %} {#- field.is_software_readable and field.is_hardware_readable #}
     {%- endif %} {#- field.is_software_writable #}
     {%- endfor %} {%- else %} {#- fields #}
-    {%- if register.is_software_writable() and not (register.has_hw_write_option(HardwareWriteOptions.CONTINUOUS) and not register.has_hw_write_option(HardwareWriteOptions.ENABLE)) %}
+    {%- if register.is_software_writable() and register.sw_write_behavior == SoftwareWriteBehavior.NORMAL and not (register.has_hw_write_option(HardwareWriteOptions.CONTINUOUS) and not register.has_hw_write_option(HardwareWriteOptions.ENABLE)) %}
     {§ spacing 1 §}
     expected_data = { {{register.width}} {1'b1}};
     register_sw_write_data = expected_data;
@@ -526,7 +526,7 @@ module {{register_bank.name}}__register_bank__testbench;
     $display("CHECK 3 : Software write all zeros.");
     {%- for register in register_bank.registers %}
     {%- if register.fields %} {%- for field in register.fields %}
-    {%- if field.is_software_writable() and not (field.has_hw_write_option(HardwareWriteOptions.CONTINUOUS) and not field.has_hw_write_option(HardwareWriteOptions.ENABLE)) %}
+    {%- if field.is_software_writable() and field.sw_write_behavior == SoftwareWriteBehavior.NORMAL and not (field.has_hw_write_option(HardwareWriteOptions.CONTINUOUS) and not field.has_hw_write_option(HardwareWriteOptions.ENABLE)) %}
     {§ spacing 1 §}
     expected_data = { {{field.width}} {1'b0}};
     register_sw_write_data = expected_data << register__{{register.hierarchical_name}}__{{field.name}}__offset;
@@ -548,7 +548,7 @@ module {{register_bank.name}}__register_bank__testbench;
     {%- endif %} {#- field.is_software_readable and field.is_hardware_readable #}
     {%- endif %} {#- field.is_software_writable #}
     {%- endfor %} {%- else %} {#- fields #}
-    {%- if register.is_software_writable() and not (register.has_hw_write_option(HardwareWriteOptions.CONTINUOUS) and not register.has_hw_write_option(HardwareWriteOptions.ENABLE)) %}
+    {%- if register.is_software_writable() and register.sw_write_behavior == SoftwareWriteBehavior.NORMAL and not (register.has_hw_write_option(HardwareWriteOptions.CONTINUOUS) and not register.has_hw_write_option(HardwareWriteOptions.ENABLE)) %}
     {§ spacing 1 §}
     expected_data = { {{register.width}} {1'b0}};
     register_sw_write_data = expected_data;
@@ -1134,6 +1134,172 @@ module {{register_bank.name}}__register_bank__testbench;
       else $error("[%t] Incorrect XOR reduction for register '{{register.hierarchical_name}}'. Expected '%0b' but got '%0b'.", $realtime, ^register__{{register.hierarchical_name}}, register__{{register.hierarchical_name}}__xored);
     {%- endif %}
     {%- endif %} {#- register.has_hw_read_option(DATA) #}
+    {%- endif %} {#- fields #}
+    {%- endfor %} {#- registers #}
+
+    repeat(5) @(negedge control__pclock);
+
+
+    {§ spacing 2 §}
+
+
+    // Check 15 : Software write behaviors
+    $display("CHECK 15 : Software write behaviors.");
+    {%- for register in register_bank.registers %}
+    {%- if register.fields %} {%- for field in register.fields %}
+    {%- if field.is_software_writable() and field.sw_write_behavior != SoftwareWriteBehavior.NORMAL %}
+    {%- if field.is_hardware_writable() and field.has_hw_write_option(HardwareWriteOptions.ENABLE) %}
+    {§ spacing 1 §}
+    // '{{register.hierarchical_name}}.{{field.name}}' : {{field.sw_write_behavior|string}}
+    {%- if field.sw_write_behavior == SoftwareWriteBehavior.WRITE_ONE_SETS %}
+    register__{{register.hierarchical_name}}__{{field.name}}__hw_write_enable = 1;
+    register__{{register.hierarchical_name}}__{{field.name}}__hw_write_data = 0;
+    @(negedge control__pclock);
+    register__{{register.hierarchical_name}}__{{field.name}}__hw_write_enable = 0;
+    expected_data = {{field.width}}'d1;
+    register_sw_write_data = expected_data << register__{{register.hierarchical_name}}__{{field.name}}__offset;
+    register_write(register__{{register.hierarchical_name}}__address, register_sw_write_data);
+    register_read(register__{{register.hierarchical_name}}__address);
+    field_sw_read_data = (register_sw_read_data & register__{{register.hierarchical_name}}__{{field.name}}__mask) >> register__{{register.hierarchical_name}}__{{field.name}}__offset;
+    assert(field_sw_read_data === expected_data)
+      else $error("[%t] Incorrect value after Write-One-Sets for register field '{{register.hierarchical_name}}.{{field.name}}'. Expected '%0h' but got '%0h' instead.", $realtime, expected_data, field_sw_read_data);
+    {%- elif field.sw_write_behavior == SoftwareWriteBehavior.WRITE_ONE_CLEARS %}
+    register__{{register.hierarchical_name}}__{{field.name}}__hw_write_enable = 1;
+    register__{{register.hierarchical_name}}__{{field.name}}__hw_write_data = ~0;
+    @(negedge control__pclock);
+    register__{{register.hierarchical_name}}__{{field.name}}__hw_write_enable = 0;
+    expected_data = ~{{field.width}}'d1;
+    register_sw_write_data = {{field.width}}'d1 << register__{{register.hierarchical_name}}__{{field.name}}__offset;
+    register_write(register__{{register.hierarchical_name}}__address, register_sw_write_data);
+    register_read(register__{{register.hierarchical_name}}__address);
+    field_sw_read_data = (register_sw_read_data & register__{{register.hierarchical_name}}__{{field.name}}__mask) >> register__{{register.hierarchical_name}}__{{field.name}}__offset;
+    assert(field_sw_read_data === expected_data)
+      else $error("[%t] Incorrect value after Write-One-Clears for register field '{{register.hierarchical_name}}.{{field.name}}'. Expected '%0h' but got '%0h' instead.", $realtime, expected_data, field_sw_read_data);
+    {%- elif field.sw_write_behavior == SoftwareWriteBehavior.WRITE_ONE_TOGGLES %}
+    register__{{register.hierarchical_name}}__{{field.name}}__hw_write_enable = 1;
+    register__{{register.hierarchical_name}}__{{field.name}}__hw_write_data = ~0;
+    @(negedge control__pclock);
+    register__{{register.hierarchical_name}}__{{field.name}}__hw_write_enable = 0;
+    expected_data = ~{{field.width}}'d1;
+    register_sw_write_data = {{field.width}}'d1 << register__{{register.hierarchical_name}}__{{field.name}}__offset;
+    register_write(register__{{register.hierarchical_name}}__address, register_sw_write_data);
+    register_read(register__{{register.hierarchical_name}}__address);
+    field_sw_read_data = (register_sw_read_data & register__{{register.hierarchical_name}}__{{field.name}}__mask) >> register__{{register.hierarchical_name}}__{{field.name}}__offset;
+    assert(field_sw_read_data === expected_data)
+      else $error("[%t] Incorrect value after Write-One-Toggles for register field '{{register.hierarchical_name}}.{{field.name}}'. Expected '%0h' but got '%0h' instead.", $realtime, expected_data, field_sw_read_data);
+    {%- elif field.sw_write_behavior == SoftwareWriteBehavior.WRITE_ZERO_SETS %}
+    register__{{register.hierarchical_name}}__{{field.name}}__hw_write_enable = 1;
+    register__{{register.hierarchical_name}}__{{field.name}}__hw_write_data = 0;
+    @(negedge control__pclock);
+    register__{{register.hierarchical_name}}__{{field.name}}__hw_write_enable = 0;
+    expected_data = ~{{field.width}}'d1;
+    register_sw_write_data = {{field.width}}'d1 << register__{{register.hierarchical_name}}__{{field.name}}__offset;
+    register_write(register__{{register.hierarchical_name}}__address, register_sw_write_data);
+    register_read(register__{{register.hierarchical_name}}__address);
+    field_sw_read_data = (register_sw_read_data & register__{{register.hierarchical_name}}__{{field.name}}__mask) >> register__{{register.hierarchical_name}}__{{field.name}}__offset;
+    assert(field_sw_read_data === expected_data)
+      else $error("[%t] Incorrect value after Write-Zero-Sets for register field '{{register.hierarchical_name}}.{{field.name}}'. Expected '%0h' but got '%0h' instead.", $realtime, expected_data, field_sw_read_data);
+    {%- elif field.sw_write_behavior == SoftwareWriteBehavior.WRITE_ZERO_CLEARS %}
+    register__{{register.hierarchical_name}}__{{field.name}}__hw_write_enable = 1;
+    register__{{register.hierarchical_name}}__{{field.name}}__hw_write_data = ~0;
+    @(negedge control__pclock);
+    register__{{register.hierarchical_name}}__{{field.name}}__hw_write_enable = 0;
+    expected_data = {{field.width}}'d1;
+    register_sw_write_data = {{field.width}}'d1 << register__{{register.hierarchical_name}}__{{field.name}}__offset;
+    register_write(register__{{register.hierarchical_name}}__address, register_sw_write_data);
+    register_read(register__{{register.hierarchical_name}}__address);
+    field_sw_read_data = (register_sw_read_data & register__{{register.hierarchical_name}}__{{field.name}}__mask) >> register__{{register.hierarchical_name}}__{{field.name}}__offset;
+    assert(field_sw_read_data === expected_data)
+      else $error("[%t] Incorrect value after Write-Zero-Clears for register field '{{register.hierarchical_name}}.{{field.name}}'. Expected '%0h' but got '%0h' instead.", $realtime, expected_data, field_sw_read_data);
+    {%- elif field.sw_write_behavior == SoftwareWriteBehavior.WRITE_ZERO_TOGGLES %}
+    register__{{register.hierarchical_name}}__{{field.name}}__hw_write_enable = 1;
+    register__{{register.hierarchical_name}}__{{field.name}}__hw_write_data = 0;
+    @(negedge control__pclock);
+    register__{{register.hierarchical_name}}__{{field.name}}__hw_write_enable = 0;
+    expected_data = ~{{field.width}}'d1;
+    register_sw_write_data = {{field.width}}'d1 << register__{{register.hierarchical_name}}__{{field.name}}__offset;
+    register_write(register__{{register.hierarchical_name}}__address, register_sw_write_data);
+    register_read(register__{{register.hierarchical_name}}__address);
+    field_sw_read_data = (register_sw_read_data & register__{{register.hierarchical_name}}__{{field.name}}__mask) >> register__{{register.hierarchical_name}}__{{field.name}}__offset;
+    assert(field_sw_read_data === expected_data)
+      else $error("[%t] Incorrect value after Write-Zero-Toggles for register field '{{register.hierarchical_name}}.{{field.name}}'. Expected '%0h' but got '%0h' instead.", $realtime, expected_data, field_sw_read_data);
+    {%- endif %} {#- behavior #}
+    {%- endif %} {#- has hw write enable #}
+    {%- endif %} {#- is_sw_writable and non-NORMAL #}
+    {%- endfor %} {%- else %} {#- fields #}
+    {%- if register.is_software_writable() and register.sw_write_behavior != SoftwareWriteBehavior.NORMAL %}
+    {%- if register.is_hardware_writable() and register.has_hw_write_option(HardwareWriteOptions.ENABLE) %}
+    {§ spacing 1 §}
+    // '{{register.hierarchical_name}}' : {{register.sw_write_behavior|string}}
+    {%- if register.sw_write_behavior == SoftwareWriteBehavior.WRITE_ONE_SETS %}
+    register__{{register.hierarchical_name}}__hw_write_enable = 1;
+    register__{{register.hierarchical_name}}__hw_write_data = 0;
+    @(negedge control__pclock);
+    register__{{register.hierarchical_name}}__hw_write_enable = 0;
+    expected_data = {{register.width}}'d1;
+    register_sw_write_data = expected_data;
+    register_write(register__{{register.hierarchical_name}}__address, register_sw_write_data);
+    register_read(register__{{register.hierarchical_name}}__address);
+    assert(register_sw_read_data === expected_data)
+      else $error("[%t] Incorrect value after Write-One-Sets for register '{{register.hierarchical_name}}'. Expected '%0h' but got '%0h' instead.", $realtime, expected_data, register_sw_read_data);
+    {%- elif register.sw_write_behavior == SoftwareWriteBehavior.WRITE_ONE_CLEARS %}
+    register__{{register.hierarchical_name}}__hw_write_enable = 1;
+    register__{{register.hierarchical_name}}__hw_write_data = ~0;
+    @(negedge control__pclock);
+    register__{{register.hierarchical_name}}__hw_write_enable = 0;
+    expected_data = ~{{register.width}}'d1;
+    register_sw_write_data = {{register.width}}'d1;
+    register_write(register__{{register.hierarchical_name}}__address, register_sw_write_data);
+    register_read(register__{{register.hierarchical_name}}__address);
+    assert(register_sw_read_data === expected_data)
+      else $error("[%t] Incorrect value after Write-One-Clears for register '{{register.hierarchical_name}}'. Expected '%0h' but got '%0h' instead.", $realtime, expected_data, register_sw_read_data);
+    {%- elif register.sw_write_behavior == SoftwareWriteBehavior.WRITE_ONE_TOGGLES %}
+    register__{{register.hierarchical_name}}__hw_write_enable = 1;
+    register__{{register.hierarchical_name}}__hw_write_data = ~0;
+    @(negedge control__pclock);
+    register__{{register.hierarchical_name}}__hw_write_enable = 0;
+    expected_data = ~{{register.width}}'d1;
+    register_sw_write_data = {{register.width}}'d1;
+    register_write(register__{{register.hierarchical_name}}__address, register_sw_write_data);
+    register_read(register__{{register.hierarchical_name}}__address);
+    assert(register_sw_read_data === expected_data)
+      else $error("[%t] Incorrect value after Write-One-Toggles for register '{{register.hierarchical_name}}'. Expected '%0h' but got '%0h' instead.", $realtime, expected_data, register_sw_read_data);
+    {%- elif register.sw_write_behavior == SoftwareWriteBehavior.WRITE_ZERO_SETS %}
+    register__{{register.hierarchical_name}}__hw_write_enable = 1;
+    register__{{register.hierarchical_name}}__hw_write_data = 0;
+    @(negedge control__pclock);
+    register__{{register.hierarchical_name}}__hw_write_enable = 0;
+    expected_data = ~{{register.width}}'d1;
+    register_sw_write_data = {{register.width}}'d1;
+    register_write(register__{{register.hierarchical_name}}__address, register_sw_write_data);
+    register_read(register__{{register.hierarchical_name}}__address);
+    assert(register_sw_read_data === expected_data)
+      else $error("[%t] Incorrect value after Write-Zero-Sets for register '{{register.hierarchical_name}}'. Expected '%0h' but got '%0h' instead.", $realtime, expected_data, register_sw_read_data);
+    {%- elif register.sw_write_behavior == SoftwareWriteBehavior.WRITE_ZERO_CLEARS %}
+    register__{{register.hierarchical_name}}__hw_write_enable = 1;
+    register__{{register.hierarchical_name}}__hw_write_data = ~0;
+    @(negedge control__pclock);
+    register__{{register.hierarchical_name}}__hw_write_enable = 0;
+    expected_data = {{register.width}}'d1;
+    register_sw_write_data = {{register.width}}'d1;
+    register_write(register__{{register.hierarchical_name}}__address, register_sw_write_data);
+    register_read(register__{{register.hierarchical_name}}__address);
+    assert(register_sw_read_data === expected_data)
+      else $error("[%t] Incorrect value after Write-Zero-Clears for register '{{register.hierarchical_name}}'. Expected '%0h' but got '%0h' instead.", $realtime, expected_data, register_sw_read_data);
+    {%- elif register.sw_write_behavior == SoftwareWriteBehavior.WRITE_ZERO_TOGGLES %}
+    register__{{register.hierarchical_name}}__hw_write_enable = 1;
+    register__{{register.hierarchical_name}}__hw_write_data = 0;
+    @(negedge control__pclock);
+    register__{{register.hierarchical_name}}__hw_write_enable = 0;
+    expected_data = ~{{register.width}}'d1;
+    register_sw_write_data = {{register.width}}'d1;
+    register_write(register__{{register.hierarchical_name}}__address, register_sw_write_data);
+    register_read(register__{{register.hierarchical_name}}__address);
+    assert(register_sw_read_data === expected_data)
+      else $error("[%t] Incorrect value after Write-Zero-Toggles for register '{{register.hierarchical_name}}'. Expected '%0h' but got '%0h' instead.", $realtime, expected_data, register_sw_read_data);
+    {%- endif %} {#- behavior #}
+    {%- endif %} {#- has hw write enable #}
+    {%- endif %} {#- is_sw_writable and non-NORMAL #}
     {%- endif %} {#- fields #}
     {%- endfor %} {#- registers #}
 
