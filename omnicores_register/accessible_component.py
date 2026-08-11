@@ -11,7 +11,14 @@
 
 
 from typing import Optional
-from omnicores_register.enums import SoftwareAccessType, HardwareAccessType
+from omnicores_register.enums import (
+  SoftwareAccessType,
+  HardwareAccessType,
+  HardwareWriteOptions,
+  HardwareReadOptions,
+  SoftwareWriteBehavior,
+  SoftwareReadBehavior,
+)
 
 
 
@@ -20,11 +27,19 @@ class AccessibleComponent:
 
   def __init__(
       self,
-      software_access : Optional[SoftwareAccessType] = None, # Default defined in elaboration
-      hardware_access : Optional[HardwareAccessType] = None, # Default defined in elaboration
+      software_access   : Optional[SoftwareAccessType]    = None,  # Default defined in elaboration
+      hardware_access   : Optional[HardwareAccessType]    = None,  # Default defined in elaboration
+      hw_write_options  : Optional[HardwareWriteOptions]  = None,  # Default defined in elaboration
+      hw_read_options   : Optional[HardwareReadOptions]   = None,  # Default defined in elaboration
+      sw_write_behavior : Optional[SoftwareWriteBehavior] = None,  # Default defined in elaboration
+      sw_read_behavior  : Optional[SoftwareReadBehavior]  = None,  # Default defined in elaboration
     ):
-    self.software_access = software_access
-    self.hardware_access = hardware_access
+    self.software_access   = software_access
+    self.hardware_access   = hardware_access
+    self.hw_write_options  = hw_write_options
+    self.hw_read_options   = hw_read_options
+    self.sw_write_behavior = sw_write_behavior
+    self.sw_read_behavior  = sw_read_behavior
 
   def is_software_readable(self) -> bool:
     return self.software_access in [SoftwareAccessType.READ_ONLY, SoftwareAccessType.READ_WRITE]

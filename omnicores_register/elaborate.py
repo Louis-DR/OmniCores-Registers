@@ -18,12 +18,24 @@ from omnicores_register.component_array import ComponentArray
 from omnicores_register.enums import (
   SoftwareAccessType,
   HardwareAccessType,
+  HardwareWriteOptions,
+  HardwareReadOptions,
+  SoftwareWriteBehavior,
+  SoftwareReadBehavior,
   PackingPolicy,
   UNSPECIFIED,
   register_default_software_access,
   register_default_hardware_access,
   field_default_software_access,
   field_default_hardware_access,
+  register_default_hw_write_options,
+  register_default_hw_read_options,
+  register_default_sw_write_behavior,
+  register_default_sw_read_behavior,
+  field_default_hw_write_options,
+  field_default_hw_read_options,
+  field_default_sw_write_behavior,
+  field_default_sw_read_behavior,
 )
 
 
@@ -185,10 +197,18 @@ def _elaborate_access_policies(container):
   for register in container.registers:
     if register.fields:
       for field in register.fields:
-        field.software_access = field.software_access or register.software_access or field_default_software_access
-        field.hardware_access = field.hardware_access or register.hardware_access or field_default_hardware_access
-    register.software_access = register.software_access or register_default_software_access
-    register.hardware_access = register.hardware_access or register_default_hardware_access
+        field.software_access   = field.software_access   or register.software_access   or field_default_software_access
+        field.hardware_access   = field.hardware_access   or register.hardware_access   or field_default_hardware_access
+        field.hw_write_options  = field.hw_write_options  or register.hw_write_options  or field_default_hw_write_options
+        field.hw_read_options   = field.hw_read_options   or register.hw_read_options   or field_default_hw_read_options
+        field.sw_write_behavior = field.sw_write_behavior or register.sw_write_behavior or field_default_sw_write_behavior
+        field.sw_read_behavior  = field.sw_read_behavior  or register.sw_read_behavior  or field_default_sw_read_behavior
+    register.software_access   = register.software_access   or register_default_software_access
+    register.hardware_access   = register.hardware_access   or register_default_hardware_access
+    register.hw_write_options  = register.hw_write_options  or register_default_hw_write_options
+    register.hw_read_options   = register.hw_read_options   or register_default_hw_read_options
+    register.sw_write_behavior = register.sw_write_behavior or register_default_sw_write_behavior
+    register.sw_read_behavior  = register.sw_read_behavior  or register_default_sw_read_behavior
     if register.fields:
       _upgrade_register_access_from_fields(register)
   _elaborate_array_prototype_access(container)
@@ -201,22 +221,38 @@ def _elaborate_array_prototype_access(container):
     if isinstance(component, ComponentArray):
       prototype = component.prototype
       if isinstance(prototype, Register):
-        prototype.software_access = prototype.software_access or register_default_software_access
-        prototype.hardware_access = prototype.hardware_access or register_default_hardware_access
+        prototype.software_access   = prototype.software_access   or register_default_software_access
+        prototype.hardware_access   = prototype.hardware_access   or register_default_hardware_access
+        prototype.hw_write_options  = prototype.hw_write_options  or register_default_hw_write_options
+        prototype.hw_read_options   = prototype.hw_read_options   or register_default_hw_read_options
+        prototype.sw_write_behavior = prototype.sw_write_behavior or register_default_sw_write_behavior
+        prototype.sw_read_behavior  = prototype.sw_read_behavior  or register_default_sw_read_behavior
         if prototype.fields:
           for field in prototype.fields:
-            field.software_access = field.software_access or prototype.software_access or field_default_software_access
-            field.hardware_access = field.hardware_access or prototype.hardware_access or field_default_hardware_access
+            field.software_access   = field.software_access   or prototype.software_access   or field_default_software_access
+            field.hardware_access   = field.hardware_access   or prototype.hardware_access   or field_default_hardware_access
+            field.hw_write_options  = field.hw_write_options  or prototype.hw_write_options  or field_default_hw_write_options
+            field.hw_read_options   = field.hw_read_options   or prototype.hw_read_options   or field_default_hw_read_options
+            field.sw_write_behavior = field.sw_write_behavior or prototype.sw_write_behavior or field_default_sw_write_behavior
+            field.sw_read_behavior  = field.sw_read_behavior  or prototype.sw_read_behavior  or field_default_sw_read_behavior
           _upgrade_register_access_from_fields(prototype)
       elif isinstance(prototype, RegisterFile):
         _elaborate_array_prototype_access(prototype)
     elif isinstance(component, Register):
-      component.software_access = component.software_access or register_default_software_access
-      component.hardware_access = component.hardware_access or register_default_hardware_access
+      component.software_access   = component.software_access   or register_default_software_access
+      component.hardware_access   = component.hardware_access   or register_default_hardware_access
+      component.hw_write_options  = component.hw_write_options  or register_default_hw_write_options
+      component.hw_read_options   = component.hw_read_options   or register_default_hw_read_options
+      component.sw_write_behavior = component.sw_write_behavior or register_default_sw_write_behavior
+      component.sw_read_behavior  = component.sw_read_behavior  or register_default_sw_read_behavior
       if component.fields:
         for field in component.fields:
-          field.software_access = field.software_access or component.software_access or field_default_software_access
-          field.hardware_access = field.hardware_access or component.hardware_access or field_default_hardware_access
+          field.software_access   = field.software_access   or component.software_access   or field_default_software_access
+          field.hardware_access   = field.hardware_access   or component.hardware_access   or field_default_hardware_access
+          field.hw_write_options  = field.hw_write_options  or component.hw_write_options  or field_default_hw_write_options
+          field.hw_read_options   = field.hw_read_options   or component.hw_read_options   or field_default_hw_read_options
+          field.sw_write_behavior = field.sw_write_behavior or component.sw_write_behavior or field_default_sw_write_behavior
+          field.sw_read_behavior  = field.sw_read_behavior  or component.sw_read_behavior  or field_default_sw_read_behavior
         _upgrade_register_access_from_fields(component)
     elif isinstance(component, RegisterFile):
       _elaborate_array_prototype_access(component)

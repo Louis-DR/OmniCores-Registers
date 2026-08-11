@@ -10,7 +10,7 @@
 
 
 from typing import Optional
-from omnicores_register.enums import SoftwareAccessType, HardwareAccessType
+from omnicores_register.enums import SoftwareAccessType, HardwareAccessType, HardwareWriteOptions, HardwareReadOptions, SoftwareWriteBehavior, SoftwareReadBehavior
 from omnicores_register.field import Field
 from omnicores_register.addressable_component import AddressableComponent
 from omnicores_register.accessible_component import AccessibleComponent
@@ -20,19 +20,38 @@ from omnicores_register.accessible_component import AccessibleComponent
 class Register(AddressableComponent, AccessibleComponent):
   def __init__(
       self,
-      name            : str,
-      title           : Optional[str]                = None,
-      description     : Optional[str]                = "",
-      width           : int                          = 32,
-      offset          : Optional[int]                = None,
-      align           : Optional[int]                = None,
-      reset_value     : Optional[int]                = 0,
-      software_access : Optional[SoftwareAccessType] = None, # Default defined in elaboration
-      hardware_access : Optional[HardwareAccessType] = None, # Default defined in elaboration
-      fields          : Optional[list[Field]]        = None,
+      name              : str,
+      title             : Optional[str]                   = None,
+      description       : Optional[str]                   = "",
+      width             : int                             = 32,
+      offset            : Optional[int]                   = None,
+      align             : Optional[int]                   = None,
+      reset_value       : Optional[int]                   = 0,
+      software_access   : Optional[SoftwareAccessType]    = None, # Default defined in elaboration
+      hardware_access   : Optional[HardwareAccessType]    = None, # Default defined in elaboration
+      hw_write_options  : Optional[HardwareWriteOptions]  = None, # Default defined in elaboration
+      hw_read_options   : Optional[HardwareReadOptions]   = None, # Default defined in elaboration
+      sw_write_behavior : Optional[SoftwareWriteBehavior] = None, # Default defined in elaboration
+      sw_read_behavior  : Optional[SoftwareReadBehavior]  = None, # Default defined in elaboration
+      fields            : Optional[list[Field]]           = None,
     ):
-    AddressableComponent.__init__(self, name=name, title=title, description=description, offset=offset, align=align)
-    AccessibleComponent.__init__(self, software_access=software_access, hardware_access=hardware_access)
+    AddressableComponent.__init__(
+      self,
+      name        = name,
+      title       = title,
+      description = description,
+      offset      = offset,
+      align       = align
+    )
+    AccessibleComponent.__init__(
+      self,
+      software_access   = software_access,
+      hardware_access   = hardware_access,
+      hw_write_options  = hw_write_options,
+      hw_read_options   = hw_read_options,
+      sw_write_behavior = sw_write_behavior,
+      sw_read_behavior  = sw_read_behavior
+    )
     self.width       = width
     self.reset_value = reset_value
     self.fields      = fields or []
@@ -47,7 +66,7 @@ class Register(AddressableComponent, AccessibleComponent):
       raise ValueError("Register arrays do not support a custom stride. The stride is always 4 bytes.")
     return ComponentArray(self, length=length, stride=4)
 
-  def add(self, field:Field):
+  def add_field(self, field:Field):
     self.fields.append(field)
 
   def _build_field_bit_map(self):
