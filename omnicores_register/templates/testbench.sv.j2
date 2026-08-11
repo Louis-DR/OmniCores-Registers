@@ -79,6 +79,7 @@ module {{register_bank.name}}__register_bank__testbench;
   logic [31:0] register_hw_write_data;
   logic [31:0] field_hw_read_data;
   logic [31:0] field_hw_write_data;
+  logic [31:0] hw_test_data;
   task automatic register_read;
     input logic [31:0] address;
     control__psel    = 1;
@@ -110,16 +111,68 @@ module {{register_bank.name}}__register_bank__testbench;
           logic {{field.width|arr}} register__{{register.hierarchical_name}}__{{field.name}};
         {%- endif %}
         {%- if field.is_hardware_writable() %}
-          logic                     register__{{register.hierarchical_name}}__{{field.name}}__hw_write_enable;
-          logic {{field.width|arr}} register__{{register.hierarchical_name}}__{{field.name}}__hw_write_data;
+          {%- if field.has_hw_write_option(HardwareWriteOptions.ENABLE) %}
+            logic                     register__{{register.hierarchical_name}}__{{field.name}}__hw_write_enable;
+            logic {{field.width|arr}} register__{{register.hierarchical_name}}__{{field.name}}__hw_write_data;
+          {%- endif %}
+          {%- if field.has_hw_write_option(HardwareWriteOptions.CONTINUOUS) %}
+            logic {{field.width|arr}} register__{{register.hierarchical_name}}__{{field.name}}__hw_write_data;
+          {%- endif %}
+          {%- if field.has_hw_write_option(HardwareWriteOptions.SET_MASK) %}
+            logic {{field.width|arr}} register__{{register.hierarchical_name}}__{{field.name}}__hw_set_mask;
+          {%- endif %}
+          {%- if field.has_hw_write_option(HardwareWriteOptions.SET_ALL) %}
+            logic                     register__{{register.hierarchical_name}}__{{field.name}}__hw_set_all;
+          {%- endif %}
+          {%- if field.has_hw_write_option(HardwareWriteOptions.CLEAR_MASK) %}
+            logic {{field.width|arr}} register__{{register.hierarchical_name}}__{{field.name}}__hw_clear_mask;
+          {%- endif %}
+          {%- if field.has_hw_write_option(HardwareWriteOptions.CLEAR_ALL) %}
+            logic                     register__{{register.hierarchical_name}}__{{field.name}}__hw_clear_all;
+          {%- endif %}
+          {%- if field.has_hw_write_option(HardwareWriteOptions.RESET) %}
+            logic                     register__{{register.hierarchical_name}}__{{field.name}}__hw_reset;
+          {%- endif %}
+          {%- if field.has_hw_write_option(HardwareWriteOptions.INCREMENT) %}
+            logic                     register__{{register.hierarchical_name}}__{{field.name}}__hw_increment;
+          {%- endif %}
+          {%- if field.has_hw_write_option(HardwareWriteOptions.DECREMENT) %}
+            logic                     register__{{register.hierarchical_name}}__{{field.name}}__hw_decrement;
+          {%- endif %}
         {%- endif %}
       {%- endfor %} {%- else %}
         {%- if register.is_hardware_readable() %}
           logic {{register.width|arr}} register__{{register.hierarchical_name}};
         {%- endif %}
         {%- if register.is_hardware_writable() %}
-          logic                        register__{{register.hierarchical_name}}__hw_write_enable;
-          logic {{register.width|arr}} register__{{register.hierarchical_name}}__hw_write_data;
+          {%- if register.has_hw_write_option(HardwareWriteOptions.ENABLE) %}
+            logic                        register__{{register.hierarchical_name}}__hw_write_enable;
+            logic {{register.width|arr}} register__{{register.hierarchical_name}}__hw_write_data;
+          {%- endif %}
+          {%- if register.has_hw_write_option(HardwareWriteOptions.CONTINUOUS) %}
+            logic {{register.width|arr}} register__{{register.hierarchical_name}}__hw_write_data;
+          {%- endif %}
+          {%- if register.has_hw_write_option(HardwareWriteOptions.SET_MASK) %}
+            logic {{register.width|arr}} register__{{register.hierarchical_name}}__hw_set_mask;
+          {%- endif %}
+          {%- if register.has_hw_write_option(HardwareWriteOptions.SET_ALL) %}
+            logic                        register__{{register.hierarchical_name}}__hw_set_all;
+          {%- endif %}
+          {%- if register.has_hw_write_option(HardwareWriteOptions.CLEAR_MASK) %}
+            logic {{register.width|arr}} register__{{register.hierarchical_name}}__hw_clear_mask;
+          {%- endif %}
+          {%- if register.has_hw_write_option(HardwareWriteOptions.CLEAR_ALL) %}
+            logic                        register__{{register.hierarchical_name}}__hw_clear_all;
+          {%- endif %}
+          {%- if register.has_hw_write_option(HardwareWriteOptions.RESET) %}
+            logic                        register__{{register.hierarchical_name}}__hw_reset;
+          {%- endif %}
+          {%- if register.has_hw_write_option(HardwareWriteOptions.INCREMENT) %}
+            logic                        register__{{register.hierarchical_name}}__hw_increment;
+          {%- endif %}
+          {%- if register.has_hw_write_option(HardwareWriteOptions.DECREMENT) %}
+            logic                        register__{{register.hierarchical_name}}__hw_decrement;
+          {%- endif %}
         {%- endif %}
       {%- endif %}
     {%- endfor %}
@@ -151,16 +204,68 @@ module {{register_bank.name}}__register_bank__testbench;
           .register__{{register.hierarchical_name}}__{{field.name}} ( register__{{register.hierarchical_name}}__{{field.name}} ),
         {%- endif %}
         {%- if field.is_hardware_writable() %}
-          .register__{{register.hierarchical_name}}__{{field.name}}__hw_write_enable ( register__{{register.hierarchical_name}}__{{field.name}}__hw_write_enable ),
-          .register__{{register.hierarchical_name}}__{{field.name}}__hw_write_data ( register__{{register.hierarchical_name}}__{{field.name}}__hw_write_data ),
+          {%- if field.has_hw_write_option(HardwareWriteOptions.ENABLE) %}
+            .register__{{register.hierarchical_name}}__{{field.name}}__hw_write_enable ( register__{{register.hierarchical_name}}__{{field.name}}__hw_write_enable ),
+            .register__{{register.hierarchical_name}}__{{field.name}}__hw_write_data ( register__{{register.hierarchical_name}}__{{field.name}}__hw_write_data ),
+          {%- endif %}
+          {%- if field.has_hw_write_option(HardwareWriteOptions.CONTINUOUS) %}
+            .register__{{register.hierarchical_name}}__{{field.name}}__hw_write_data ( register__{{register.hierarchical_name}}__{{field.name}}__hw_write_data ),
+          {%- endif %}
+          {%- if field.has_hw_write_option(HardwareWriteOptions.SET_MASK) %}
+            .register__{{register.hierarchical_name}}__{{field.name}}__hw_set_mask ( register__{{register.hierarchical_name}}__{{field.name}}__hw_set_mask ),
+          {%- endif %}
+          {%- if field.has_hw_write_option(HardwareWriteOptions.SET_ALL) %}
+            .register__{{register.hierarchical_name}}__{{field.name}}__hw_set_all ( register__{{register.hierarchical_name}}__{{field.name}}__hw_set_all ),
+          {%- endif %}
+          {%- if field.has_hw_write_option(HardwareWriteOptions.CLEAR_MASK) %}
+            .register__{{register.hierarchical_name}}__{{field.name}}__hw_clear_mask ( register__{{register.hierarchical_name}}__{{field.name}}__hw_clear_mask ),
+          {%- endif %}
+          {%- if field.has_hw_write_option(HardwareWriteOptions.CLEAR_ALL) %}
+            .register__{{register.hierarchical_name}}__{{field.name}}__hw_clear_all ( register__{{register.hierarchical_name}}__{{field.name}}__hw_clear_all ),
+          {%- endif %}
+          {%- if field.has_hw_write_option(HardwareWriteOptions.RESET) %}
+            .register__{{register.hierarchical_name}}__{{field.name}}__hw_reset ( register__{{register.hierarchical_name}}__{{field.name}}__hw_reset ),
+          {%- endif %}
+          {%- if field.has_hw_write_option(HardwareWriteOptions.INCREMENT) %}
+            .register__{{register.hierarchical_name}}__{{field.name}}__hw_increment ( register__{{register.hierarchical_name}}__{{field.name}}__hw_increment ),
+          {%- endif %}
+          {%- if field.has_hw_write_option(HardwareWriteOptions.DECREMENT) %}
+            .register__{{register.hierarchical_name}}__{{field.name}}__hw_decrement ( register__{{register.hierarchical_name}}__{{field.name}}__hw_decrement ),
+          {%- endif %}
         {%- endif %}
       {%- endfor %} {%- else %}
         {%- if register.is_hardware_readable() %}
           .register__{{register.hierarchical_name}} ( register__{{register.hierarchical_name}} ),
         {%- endif %}
         {%- if register.is_hardware_writable() %}
-          .register__{{register.hierarchical_name}}__hw_write_enable ( register__{{register.hierarchical_name}}__hw_write_enable ),
-          .register__{{register.hierarchical_name}}__hw_write_data ( register__{{register.hierarchical_name}}__hw_write_data ),
+          {%- if register.has_hw_write_option(HardwareWriteOptions.ENABLE) %}
+            .register__{{register.hierarchical_name}}__hw_write_enable ( register__{{register.hierarchical_name}}__hw_write_enable ),
+            .register__{{register.hierarchical_name}}__hw_write_data ( register__{{register.hierarchical_name}}__hw_write_data ),
+          {%- endif %}
+          {%- if register.has_hw_write_option(HardwareWriteOptions.CONTINUOUS) %}
+            .register__{{register.hierarchical_name}}__hw_write_data ( register__{{register.hierarchical_name}}__hw_write_data ),
+          {%- endif %}
+          {%- if register.has_hw_write_option(HardwareWriteOptions.SET_MASK) %}
+            .register__{{register.hierarchical_name}}__hw_set_mask ( register__{{register.hierarchical_name}}__hw_set_mask ),
+          {%- endif %}
+          {%- if register.has_hw_write_option(HardwareWriteOptions.SET_ALL) %}
+            .register__{{register.hierarchical_name}}__hw_set_all ( register__{{register.hierarchical_name}}__hw_set_all ),
+          {%- endif %}
+          {%- if register.has_hw_write_option(HardwareWriteOptions.CLEAR_MASK) %}
+            .register__{{register.hierarchical_name}}__hw_clear_mask ( register__{{register.hierarchical_name}}__hw_clear_mask ),
+          {%- endif %}
+          {%- if register.has_hw_write_option(HardwareWriteOptions.CLEAR_ALL) %}
+            .register__{{register.hierarchical_name}}__hw_clear_all ( register__{{register.hierarchical_name}}__hw_clear_all ),
+          {%- endif %}
+          {%- if register.has_hw_write_option(HardwareWriteOptions.RESET) %}
+            .register__{{register.hierarchical_name}}__hw_reset ( register__{{register.hierarchical_name}}__hw_reset ),
+          {%- endif %}
+          {%- if register.has_hw_write_option(HardwareWriteOptions.INCREMENT) %}
+            .register__{{register.hierarchical_name}}__hw_increment ( register__{{register.hierarchical_name}}__hw_increment ),
+          {%- endif %}
+          {%- if register.has_hw_write_option(HardwareWriteOptions.DECREMENT) %}
+            .register__{{register.hierarchical_name}}__hw_decrement ( register__{{register.hierarchical_name}}__hw_decrement ),
+          {%- endif %}
         {%- endif %}
       {%- endif %}
     {%- endfor %}
@@ -192,11 +297,63 @@ module {{register_bank.name}}__register_bank__testbench;
       {%- for register in register_bank.registers %}
         {%- if register.fields %} {%- for field in register.fields %}
           {%- if field.is_hardware_writable() %}
-            register__{{register.hierarchical_name}}__{{field.name}}__hw_write_enable § = 0;
+            {%- if field.has_hw_write_option(HardwareWriteOptions.ENABLE) %}
+              register__{{register.hierarchical_name}}__{{field.name}}__hw_write_enable § = 0;
+            {%- endif %}
+            {%- if field.has_hw_write_option(HardwareWriteOptions.CONTINUOUS) %}
+              register__{{register.hierarchical_name}}__{{field.name}}__hw_write_data § = 0;
+            {%- endif %}
+            {%- if field.has_hw_write_option(HardwareWriteOptions.SET_MASK) %}
+              register__{{register.hierarchical_name}}__{{field.name}}__hw_set_mask § = 0;
+            {%- endif %}
+            {%- if field.has_hw_write_option(HardwareWriteOptions.SET_ALL) %}
+              register__{{register.hierarchical_name}}__{{field.name}}__hw_set_all § = 0;
+            {%- endif %}
+            {%- if field.has_hw_write_option(HardwareWriteOptions.CLEAR_MASK) %}
+              register__{{register.hierarchical_name}}__{{field.name}}__hw_clear_mask § = 0;
+            {%- endif %}
+            {%- if field.has_hw_write_option(HardwareWriteOptions.CLEAR_ALL) %}
+              register__{{register.hierarchical_name}}__{{field.name}}__hw_clear_all § = 0;
+            {%- endif %}
+            {%- if field.has_hw_write_option(HardwareWriteOptions.RESET) %}
+              register__{{register.hierarchical_name}}__{{field.name}}__hw_reset § = 0;
+            {%- endif %}
+            {%- if field.has_hw_write_option(HardwareWriteOptions.INCREMENT) %}
+              register__{{register.hierarchical_name}}__{{field.name}}__hw_increment § = 0;
+            {%- endif %}
+            {%- if field.has_hw_write_option(HardwareWriteOptions.DECREMENT) %}
+              register__{{register.hierarchical_name}}__{{field.name}}__hw_decrement § = 0;
+            {%- endif %}
           {%- endif %}
         {%- endfor %} {%- else %}
           {%- if register.is_hardware_writable() %}
-            register__{{register.hierarchical_name}}__hw_write_enable § = 0;
+            {%- if register.has_hw_write_option(HardwareWriteOptions.ENABLE) %}
+              register__{{register.hierarchical_name}}__hw_write_enable § = 0;
+            {%- endif %}
+            {%- if register.has_hw_write_option(HardwareWriteOptions.CONTINUOUS) %}
+              register__{{register.hierarchical_name}}__hw_write_data § = 0;
+            {%- endif %}
+            {%- if register.has_hw_write_option(HardwareWriteOptions.SET_MASK) %}
+              register__{{register.hierarchical_name}}__hw_set_mask § = 0;
+            {%- endif %}
+            {%- if register.has_hw_write_option(HardwareWriteOptions.SET_ALL) %}
+              register__{{register.hierarchical_name}}__hw_set_all § = 0;
+            {%- endif %}
+            {%- if register.has_hw_write_option(HardwareWriteOptions.CLEAR_MASK) %}
+              register__{{register.hierarchical_name}}__hw_clear_mask § = 0;
+            {%- endif %}
+            {%- if register.has_hw_write_option(HardwareWriteOptions.CLEAR_ALL) %}
+              register__{{register.hierarchical_name}}__hw_clear_all § = 0;
+            {%- endif %}
+            {%- if register.has_hw_write_option(HardwareWriteOptions.RESET) %}
+              register__{{register.hierarchical_name}}__hw_reset § = 0;
+            {%- endif %}
+            {%- if register.has_hw_write_option(HardwareWriteOptions.INCREMENT) %}
+              register__{{register.hierarchical_name}}__hw_increment § = 0;
+            {%- endif %}
+            {%- if register.has_hw_write_option(HardwareWriteOptions.DECREMENT) %}
+              register__{{register.hierarchical_name}}__hw_decrement § = 0;
+            {%- endif %}
           {%- endif %}
         {%- endif %}
       {%- endfor %}
@@ -219,7 +376,7 @@ module {{register_bank.name}}__register_bank__testbench;
     $display("CHECK 1 : Reset values.");
     {%- for register in register_bank.registers %}
     {%- if register.fields %} {%- for field in register.fields %}
-    {%- if field.reset_value is not none %}
+    {%- if field.reset_value is not none and not (field.has_hw_write_option(HardwareWriteOptions.CONTINUOUS) and not field.has_hw_write_option(HardwareWriteOptions.ENABLE)) %}
     {§ spacing 1 §}
     expected_data = register__{{register.hierarchical_name}}__{{field.name}}__reset_value;
     {%- if field.is_software_readable() %}
@@ -239,7 +396,7 @@ module {{register_bank.name}}__register_bank__testbench;
     {%- endif %} {#- field.is_software_readable and field.is_hardware_readable #}
     {%- endif %} {#- field.reset_value #}
     {%- endfor %} {%- else %} {#- fields #}
-    {%- if register.reset_value is not none %}
+    {%- if register.reset_value is not none and not (register.has_hw_write_option(HardwareWriteOptions.CONTINUOUS) and not register.has_hw_write_option(HardwareWriteOptions.ENABLE)) %}
     {§ spacing 1 §}
     expected_data = register__{{register.hierarchical_name}}__reset_value;
     {%- if register.is_software_readable() %}
@@ -270,7 +427,7 @@ module {{register_bank.name}}__register_bank__testbench;
     $display("CHECK 2 : Software write all ones.");
     {%- for register in register_bank.registers %}
     {%- if register.fields %} {%- for field in register.fields %}
-    {%- if field.is_software_writable() %}
+    {%- if field.is_software_writable() and not (field.has_hw_write_option(HardwareWriteOptions.CONTINUOUS) and not field.has_hw_write_option(HardwareWriteOptions.ENABLE)) %}
     {§ spacing 1 §}
     expected_data = { {{field.width}} {1'b1}};
     register_sw_write_data = expected_data << register__{{register.hierarchical_name}}__{{field.name}}__offset;
@@ -292,7 +449,7 @@ module {{register_bank.name}}__register_bank__testbench;
     {%- endif %} {#- field.is_software_readable and field.is_hardware_readable #}
     {%- endif %} {#- field.is_software_writable #}
     {%- endfor %} {%- else %} {#- fields #}
-    {%- if register.is_software_writable() %}
+    {%- if register.is_software_writable() and not (register.has_hw_write_option(HardwareWriteOptions.CONTINUOUS) and not register.has_hw_write_option(HardwareWriteOptions.ENABLE)) %}
     {§ spacing 1 §}
     expected_data = { {{register.width}} {1'b1}};
     register_sw_write_data = expected_data;
@@ -311,7 +468,7 @@ module {{register_bank.name}}__register_bank__testbench;
     assert(register_hw_read_data === register_sw_read_data)
       else $error("[%t] Different values read by software and software access for register '{{register.hierarchical_name}}'. Hardware reads '%0h' but software read '%0h'.", $realtime, register_hw_read_data, register_sw_read_data);
     {%- endif %} {#- register.is_software_readable and register.is_hardware_readable #}
-    {%- endif %} {#- register.is_software_writable #}
+    {%- endif %} {#- register.is_software_writable and not CONTINUOUS-only #}
     {%- endif %} {#- fields #}
     {%- endfor %} {#- registers #}
 
@@ -325,7 +482,7 @@ module {{register_bank.name}}__register_bank__testbench;
     $display("CHECK 3 : Software write all zeros.");
     {%- for register in register_bank.registers %}
     {%- if register.fields %} {%- for field in register.fields %}
-    {%- if field.is_software_writable() %}
+    {%- if field.is_software_writable() and not (field.has_hw_write_option(HardwareWriteOptions.CONTINUOUS) and not field.has_hw_write_option(HardwareWriteOptions.ENABLE)) %}
     {§ spacing 1 §}
     expected_data = { {{field.width}} {1'b0}};
     register_sw_write_data = expected_data << register__{{register.hierarchical_name}}__{{field.name}}__offset;
@@ -347,7 +504,7 @@ module {{register_bank.name}}__register_bank__testbench;
     {%- endif %} {#- field.is_software_readable and field.is_hardware_readable #}
     {%- endif %} {#- field.is_software_writable #}
     {%- endfor %} {%- else %} {#- fields #}
-    {%- if register.is_software_writable() %}
+    {%- if register.is_software_writable() and not (register.has_hw_write_option(HardwareWriteOptions.CONTINUOUS) and not register.has_hw_write_option(HardwareWriteOptions.ENABLE)) %}
     {§ spacing 1 §}
     expected_data = { {{register.width}} {1'b0}};
     register_sw_write_data = expected_data;
@@ -380,7 +537,7 @@ module {{register_bank.name}}__register_bank__testbench;
     $display("CHECK 4 : Hardware write all ones.");
     {%- for register in register_bank.registers %}
     {%- if register.fields %} {%- for field in register.fields %}
-    {%- if field.is_hardware_writable() %}
+    {%- if field.is_hardware_writable() and field.has_hw_write_option(HardwareWriteOptions.ENABLE) %}
     {§ spacing 1 §}
     expected_data = { {{field.width}} {1'b1}};
     field_hw_write_data = expected_data;
@@ -404,9 +561,9 @@ module {{register_bank.name}}__register_bank__testbench;
     assert(field_hw_read_data === field_sw_read_data)
       else $error("[%t] Different values read by software and software access for register field '{{register.hierarchical_name}}.{{field.name}}'. Hardware reads '%0h' but software read '%0h'.", $realtime, field_hw_read_data, field_sw_read_data);
     {%- endif %} {#- field.is_software_readable and field.is_hardware_readable #}
-    {%- endif %} {#- field.is_hardware_writable #}
+    {%- endif %} {#- field.is_hardware_writable and ENABLE #}
     {%- endfor %} {%- else %} {#- fields #}
-    {%- if register.is_hardware_writable() %}
+    {%- if register.is_hardware_writable() and register.has_hw_write_option(HardwareWriteOptions.ENABLE) %}
     {§ spacing 1 §}
     expected_data = { {{register.width}} {1'b1}};
     register_hw_write_data = expected_data;
@@ -429,7 +586,7 @@ module {{register_bank.name}}__register_bank__testbench;
     assert(register_hw_read_data === register_sw_read_data)
       else $error("[%t] Different values read by software and software access for register '{{register.hierarchical_name}}'. Hardware reads '%0h' but software read '%0h'.", $realtime, register_hw_read_data, register_sw_read_data);
     {%- endif %} {#- register.is_software_readable and register.is_hardware_readable #}
-    {%- endif %} {#- register.is_hardware_writable #}
+    {%- endif %} {#- register.is_hardware_writable and ENABLE #}
     {%- endif %} {#- fields #}
     {%- endfor %} {#- registers #}
 
@@ -443,7 +600,7 @@ module {{register_bank.name}}__register_bank__testbench;
     $display("CHECK 5 : Hardware write all zeros.");
     {%- for register in register_bank.registers %}
     {%- if register.fields %} {%- for field in register.fields %}
-    {%- if field.is_hardware_writable() %}
+    {%- if field.is_hardware_writable() and field.has_hw_write_option(HardwareWriteOptions.ENABLE) %}
     {§ spacing 1 §}
     expected_data = { {{field.width}} {1'b0}};
     field_hw_write_data = expected_data;
@@ -467,9 +624,9 @@ module {{register_bank.name}}__register_bank__testbench;
     assert(field_hw_read_data === field_sw_read_data)
       else $error("[%t] Different values read by software and software access for register field '{{register.hierarchical_name}}.{{field.name}}'. Hardware reads '%0h' but software read '%0h'.", $realtime, field_hw_read_data, field_sw_read_data);
     {%- endif %} {#- field.is_software_readable and field.is_hardware_readable #}
-    {%- endif %} {#- field.is_hardware_writable #}
+    {%- endif %} {#- field.is_hardware_writable and ENABLE #}
     {%- endfor %} {%- else %} {#- fields #}
-    {%- if register.is_hardware_writable() %}
+    {%- if register.is_hardware_writable() and register.has_hw_write_option(HardwareWriteOptions.ENABLE) %}
     {§ spacing 1 §}
     expected_data = { {{register.width}} {1'b0}};
     register_hw_write_data = expected_data;
@@ -492,7 +649,399 @@ module {{register_bank.name}}__register_bank__testbench;
     assert(register_hw_read_data === register_sw_read_data)
       else $error("[%t] Different values read by software and software access for register '{{register.hierarchical_name}}'. Hardware reads '%0h' but software read '%0h'.", $realtime, register_hw_read_data, register_sw_read_data);
     {%- endif %} {#- register.is_software_readable and register.is_hardware_readable #}
-    {%- endif %} {#- register.is_hardware_writable #}
+    {%- endif %} {#- register.is_hardware_writable and ENABLE #}
+    {%- endif %} {#- fields #}
+    {%- endfor %} {#- registers #}
+
+    repeat(5) @(negedge control__pclock);
+
+
+    {§ spacing 2 §}
+
+
+    // Check 6 : Continuous write
+    $display("CHECK 6 : Continuous write.");
+    {%- for register in register_bank.registers %}
+    {%- if register.fields %} {%- for field in register.fields %}
+    {%- if field.is_hardware_writable() and field.has_hw_write_option(HardwareWriteOptions.CONTINUOUS) %}
+    {§ spacing 1 §}
+    expected_data = { {{field.width}} {1'b1}};
+    register__{{register.hierarchical_name}}__{{field.name}}__hw_write_data = expected_data;
+    @(negedge control__pclock);
+    {%- if field.is_software_readable() %}
+    register_read (register__{{register.hierarchical_name}}__address);
+    field_sw_read_data = (register_sw_read_data & register__{{register.hierarchical_name}}__{{field.name}}__mask) >> register__{{register.hierarchical_name}}__{{field.name}}__offset;
+    assert(field_sw_read_data === expected_data)
+      else $error("[%t] Incorrect value read after continuous write for register field '{{register.hierarchical_name}}.{{field.name}}'. Expected '%0h' but got '%0h' instead.", $realtime, expected_data, field_sw_read_data);
+    {%- endif %} {#- field.is_software_readable #}
+    {%- if field.is_hardware_readable() %}
+    field_hw_read_data = register__{{register.hierarchical_name}}__{{field.name}};
+    assert(field_hw_read_data === expected_data)
+      else $error("[%t] Incorrect hardware value after continuous write for register field '{{register.hierarchical_name}}.{{field.name}}'. Expected '%0h' but got '%0h' instead.", $realtime, expected_data, field_hw_read_data);
+    {%- endif %} {#- field.is_hardware_readable #}
+    register__{{register.hierarchical_name}}__{{field.name}}__hw_write_data = 'x;
+    {%- endif %} {#- field.is_hardware_writable and CONTINUOUS #}
+    {%- endfor %} {%- else %} {#- fields #}
+    {%- if register.is_hardware_writable() and register.has_hw_write_option(HardwareWriteOptions.CONTINUOUS) %}
+    {§ spacing 1 §}
+    expected_data = { {{register.width}} {1'b1}};
+    register__{{register.hierarchical_name}}__hw_write_data = expected_data;
+    @(negedge control__pclock);
+    {%- if register.is_software_readable() %}
+    register_read (register__{{register.hierarchical_name}}__address);
+    assert(register_sw_read_data === expected_data)
+      else $error("[%t] Incorrect value read after continuous write for register '{{register.hierarchical_name}}'. Expected '%0h' but got '%0h' instead.", $realtime, expected_data, register_sw_read_data);
+    {%- endif %} {#- register.is_software_readable #}
+    {%- if register.is_hardware_readable() %}
+    register_hw_read_data = register__{{register.hierarchical_name}};
+    assert(register_hw_read_data === expected_data)
+      else $error("[%t] Incorrect hardware value after continuous write for register '{{register.hierarchical_name}}'. Expected '%0h' but got '%0h' instead.", $realtime, expected_data, register_hw_read_data);
+    {%- endif %} {#- register.is_hardware_readable #}
+    register__{{register.hierarchical_name}}__hw_write_data = 'x;
+    {%- endif %} {#- register.is_hardware_writable and CONTINUOUS #}
+    {%- endif %} {#- fields #}
+    {%- endfor %} {#- registers #}
+
+    repeat(5) @(negedge control__pclock);
+
+
+    {§ spacing 2 §}
+
+
+    // Check 7 : Set mask
+    $display("CHECK 7 : Set mask.");
+    {%- for register in register_bank.registers %}
+    {%- if register.fields %} {%- for field in register.fields %}
+    {%- if field.is_hardware_writable() and field.has_hw_write_option(HardwareWriteOptions.SET_MASK) %}
+    {§ spacing 1 §}
+    register__{{register.hierarchical_name}}__{{field.name}}__hw_set_mask = { {{field.width}} {1'b1} };
+    @(negedge control__pclock);
+    register__{{register.hierarchical_name}}__{{field.name}}__hw_set_mask = 0;
+    expected_data = { {{field.width}} {1'b1} };
+    {%- if field.is_software_readable() %}
+    register_read (register__{{register.hierarchical_name}}__address);
+    field_sw_read_data = (register_sw_read_data & register__{{register.hierarchical_name}}__{{field.name}}__mask) >> register__{{register.hierarchical_name}}__{{field.name}}__offset;
+    assert(field_sw_read_data === expected_data)
+      else $error("[%t] Incorrect value after set mask for register field '{{register.hierarchical_name}}.{{field.name}}'. Expected '%0h' but got '%0h' instead.", $realtime, expected_data, field_sw_read_data);
+    {%- endif %} {#- field.is_software_readable #}
+    {%- if field.is_hardware_readable() %}
+    field_hw_read_data = register__{{register.hierarchical_name}}__{{field.name}};
+    assert(field_hw_read_data === expected_data)
+      else $error("[%t] Incorrect hardware value after set mask for register field '{{register.hierarchical_name}}.{{field.name}}'. Expected '%0h' but got '%0h' instead.", $realtime, expected_data, field_hw_read_data);
+    {%- endif %} {#- field.is_hardware_readable #}
+    {%- endif %} {#- field.is_hardware_writable and SET_MASK #}
+    {%- endfor %} {%- else %} {#- fields #}
+    {%- if register.is_hardware_writable() and register.has_hw_write_option(HardwareWriteOptions.SET_MASK) %}
+    {§ spacing 1 §}
+    register__{{register.hierarchical_name}}__hw_set_mask = { {{register.width}} {1'b1} };
+    @(negedge control__pclock);
+    register__{{register.hierarchical_name}}__hw_set_mask = 0;
+    expected_data = { {{register.width}} {1'b1} };
+    {%- if register.is_software_readable() %}
+    register_read (register__{{register.hierarchical_name}}__address);
+    assert(register_sw_read_data === expected_data)
+      else $error("[%t] Incorrect value after set mask for register '{{register.hierarchical_name}}'. Expected '%0h' but got '%0h' instead.", $realtime, expected_data, register_sw_read_data);
+    {%- endif %} {#- register.is_software_readable #}
+    {%- if register.is_hardware_readable() %}
+    register_hw_read_data = register__{{register.hierarchical_name}};
+    assert(register_hw_read_data === expected_data)
+      else $error("[%t] Incorrect hardware value after set mask for register '{{register.hierarchical_name}}'. Expected '%0h' but got '%0h' instead.", $realtime, expected_data, register_hw_read_data);
+    {%- endif %} {#- register.is_hardware_readable #}
+    {%- endif %} {#- register.is_hardware_writable and SET_MASK #}
+    {%- endif %} {#- fields #}
+    {%- endfor %} {#- registers #}
+
+    repeat(5) @(negedge control__pclock);
+
+
+    {§ spacing 2 §}
+
+
+    // Check 8 : Set all
+    $display("CHECK 8 : Set all.");
+    {%- for register in register_bank.registers %}
+    {%- if register.fields %} {%- for field in register.fields %}
+    {%- if field.is_hardware_writable() and field.has_hw_write_option(HardwareWriteOptions.SET_ALL) %}
+    {§ spacing 1 §}
+    register__{{register.hierarchical_name}}__{{field.name}}__hw_set_all = 1;
+    @(negedge control__pclock);
+    register__{{register.hierarchical_name}}__{{field.name}}__hw_set_all = 0;
+    expected_data = { {{field.width}} {1'b1} };
+    {%- if field.is_software_readable() %}
+    register_read (register__{{register.hierarchical_name}}__address);
+    field_sw_read_data = (register_sw_read_data & register__{{register.hierarchical_name}}__{{field.name}}__mask) >> register__{{register.hierarchical_name}}__{{field.name}}__offset;
+    assert(field_sw_read_data === expected_data)
+      else $error("[%t] Incorrect value after set all for register field '{{register.hierarchical_name}}.{{field.name}}'. Expected '%0h' but got '%0h' instead.", $realtime, expected_data, field_sw_read_data);
+    {%- endif %} {#- field.is_software_readable #}
+    {%- if field.is_hardware_readable() %}
+    field_hw_read_data = register__{{register.hierarchical_name}}__{{field.name}};
+    assert(field_hw_read_data === expected_data)
+      else $error("[%t] Incorrect hardware value after set all for register field '{{register.hierarchical_name}}.{{field.name}}'. Expected '%0h' but got '%0h' instead.", $realtime, expected_data, field_hw_read_data);
+    {%- endif %} {#- field.is_hardware_readable #}
+    {%- endif %} {#- field.is_hardware_writable and SET_ALL #}
+    {%- endfor %} {%- else %} {#- fields #}
+    {%- if register.is_hardware_writable() and register.has_hw_write_option(HardwareWriteOptions.SET_ALL) %}
+    {§ spacing 1 §}
+    register__{{register.hierarchical_name}}__hw_set_all = 1;
+    @(negedge control__pclock);
+    register__{{register.hierarchical_name}}__hw_set_all = 0;
+    expected_data = { {{register.width}} {1'b1} };
+    {%- if register.is_software_readable() %}
+    register_read (register__{{register.hierarchical_name}}__address);
+    assert(register_sw_read_data === expected_data)
+      else $error("[%t] Incorrect value after set all for register '{{register.hierarchical_name}}'. Expected '%0h' but got '%0h' instead.", $realtime, expected_data, register_sw_read_data);
+    {%- endif %} {#- register.is_software_readable #}
+    {%- if register.is_hardware_readable() %}
+    register_hw_read_data = register__{{register.hierarchical_name}};
+    assert(register_hw_read_data === expected_data)
+      else $error("[%t] Incorrect hardware value after set all for register '{{register.hierarchical_name}}'. Expected '%0h' but got '%0h' instead.", $realtime, expected_data, register_hw_read_data);
+    {%- endif %} {#- register.is_hardware_readable #}
+    {%- endif %} {#- register.is_hardware_writable and SET_ALL #}
+    {%- endif %} {#- fields #}
+    {%- endfor %} {#- registers #}
+
+    repeat(5) @(negedge control__pclock);
+
+
+    {§ spacing 2 §}
+
+
+    // Check 9 : Clear mask
+    $display("CHECK 9 : Clear mask.");
+    {%- for register in register_bank.registers %}
+    {%- if register.fields %} {%- for field in register.fields %}
+    {%- if field.is_hardware_writable() and field.has_hw_write_option(HardwareWriteOptions.CLEAR_MASK) %}
+    {§ spacing 1 §}
+    register__{{register.hierarchical_name}}__{{field.name}}__hw_clear_mask = { {{field.width}} {1'b1} };
+    @(negedge control__pclock);
+    register__{{register.hierarchical_name}}__{{field.name}}__hw_clear_mask = 0;
+    expected_data = { {{field.width}} {1'b0} };
+    {%- if field.is_software_readable() %}
+    register_read (register__{{register.hierarchical_name}}__address);
+    field_sw_read_data = (register_sw_read_data & register__{{register.hierarchical_name}}__{{field.name}}__mask) >> register__{{register.hierarchical_name}}__{{field.name}}__offset;
+    assert(field_sw_read_data === expected_data)
+      else $error("[%t] Incorrect value after clear mask for register field '{{register.hierarchical_name}}.{{field.name}}'. Expected '%0h' but got '%0h' instead.", $realtime, expected_data, field_sw_read_data);
+    {%- endif %} {#- field.is_software_readable #}
+    {%- if field.is_hardware_readable() %}
+    field_hw_read_data = register__{{register.hierarchical_name}}__{{field.name}};
+    assert(field_hw_read_data === expected_data)
+      else $error("[%t] Incorrect hardware value after clear mask for register field '{{register.hierarchical_name}}.{{field.name}}'. Expected '%0h' but got '%0h' instead.", $realtime, expected_data, field_hw_read_data);
+    {%- endif %} {#- field.is_hardware_readable #}
+    {%- endif %} {#- field.is_hardware_writable and CLEAR_MASK #}
+    {%- endfor %} {%- else %} {#- fields #}
+    {%- if register.is_hardware_writable() and register.has_hw_write_option(HardwareWriteOptions.CLEAR_MASK) %}
+    {§ spacing 1 §}
+    register__{{register.hierarchical_name}}__hw_clear_mask = { {{register.width}} {1'b1} };
+    @(negedge control__pclock);
+    register__{{register.hierarchical_name}}__hw_clear_mask = 0;
+    expected_data = { {{register.width}} {1'b0} };
+    {%- if register.is_software_readable() %}
+    register_read (register__{{register.hierarchical_name}}__address);
+    assert(register_sw_read_data === expected_data)
+      else $error("[%t] Incorrect value after clear mask for register '{{register.hierarchical_name}}'. Expected '%0h' but got '%0h' instead.", $realtime, expected_data, register_sw_read_data);
+    {%- endif %} {#- register.is_software_readable #}
+    {%- if register.is_hardware_readable() %}
+    register_hw_read_data = register__{{register.hierarchical_name}};
+    assert(register_hw_read_data === expected_data)
+      else $error("[%t] Incorrect hardware value after clear mask for register '{{register.hierarchical_name}}'. Expected '%0h' but got '%0h' instead.", $realtime, expected_data, register_hw_read_data);
+    {%- endif %} {#- register.is_hardware_readable #}
+    {%- endif %} {#- register.is_hardware_writable and CLEAR_MASK #}
+    {%- endif %} {#- fields #}
+    {%- endfor %} {#- registers #}
+
+    repeat(5) @(negedge control__pclock);
+
+
+    {§ spacing 2 §}
+
+
+    // Check 10 : Clear all
+    $display("CHECK 10 : Clear all.");
+    {%- for register in register_bank.registers %}
+    {%- if register.fields %} {%- for field in register.fields %}
+    {%- if field.is_hardware_writable() and field.has_hw_write_option(HardwareWriteOptions.CLEAR_ALL) %}
+    {§ spacing 1 §}
+    register__{{register.hierarchical_name}}__{{field.name}}__hw_clear_all = 1;
+    @(negedge control__pclock);
+    register__{{register.hierarchical_name}}__{{field.name}}__hw_clear_all = 0;
+    expected_data = { {{field.width}} {1'b0} };
+    {%- if field.is_software_readable() %}
+    register_read (register__{{register.hierarchical_name}}__address);
+    field_sw_read_data = (register_sw_read_data & register__{{register.hierarchical_name}}__{{field.name}}__mask) >> register__{{register.hierarchical_name}}__{{field.name}}__offset;
+    assert(field_sw_read_data === expected_data)
+      else $error("[%t] Incorrect value after clear all for register field '{{register.hierarchical_name}}.{{field.name}}'. Expected '%0h' but got '%0h' instead.", $realtime, expected_data, field_sw_read_data);
+    {%- endif %} {#- field.is_software_readable #}
+    {%- if field.is_hardware_readable() %}
+    field_hw_read_data = register__{{register.hierarchical_name}}__{{field.name}};
+    assert(field_hw_read_data === expected_data)
+      else $error("[%t] Incorrect hardware value after clear all for register field '{{register.hierarchical_name}}.{{field.name}}'. Expected '%0h' but got '%0h' instead.", $realtime, expected_data, field_hw_read_data);
+    {%- endif %} {#- field.is_hardware_readable #}
+    {%- endif %} {#- field.is_hardware_writable and CLEAR_ALL #}
+    {%- endfor %} {%- else %} {#- fields #}
+    {%- if register.is_hardware_writable() and register.has_hw_write_option(HardwareWriteOptions.CLEAR_ALL) %}
+    {§ spacing 1 §}
+    register__{{register.hierarchical_name}}__hw_clear_all = 1;
+    @(negedge control__pclock);
+    register__{{register.hierarchical_name}}__hw_clear_all = 0;
+    expected_data = { {{register.width}} {1'b0} };
+    {%- if register.is_software_readable() %}
+    register_read (register__{{register.hierarchical_name}}__address);
+    assert(register_sw_read_data === expected_data)
+      else $error("[%t] Incorrect value after clear all for register '{{register.hierarchical_name}}'. Expected '%0h' but got '%0h' instead.", $realtime, expected_data, register_sw_read_data);
+    {%- endif %} {#- register.is_software_readable #}
+    {%- if register.is_hardware_readable() %}
+    register_hw_read_data = register__{{register.hierarchical_name}};
+    assert(register_hw_read_data === expected_data)
+      else $error("[%t] Incorrect hardware value after clear all for register '{{register.hierarchical_name}}'. Expected '%0h' but got '%0h' instead.", $realtime, expected_data, register_hw_read_data);
+    {%- endif %} {#- register.is_hardware_readable #}
+    {%- endif %} {#- register.is_hardware_writable and CLEAR_ALL #}
+    {%- endif %} {#- fields #}
+    {%- endfor %} {#- registers #}
+
+    repeat(5) @(negedge control__pclock);
+
+
+    {§ spacing 2 §}
+
+
+    // Check 11 : Reset
+    $display("CHECK 11 : Reset.");
+    {%- for register in register_bank.registers %}
+    {%- if register.fields %} {%- for field in register.fields %}
+    {%- if field.is_hardware_writable() and field.has_hw_write_option(HardwareWriteOptions.RESET) and field.reset_value is not none %}
+    {§ spacing 1 §}
+    expected_data = register__{{register.hierarchical_name}}__{{field.name}}__reset_value;
+    register__{{register.hierarchical_name}}__{{field.name}}__hw_reset = 1;
+    @(negedge control__pclock);
+    register__{{register.hierarchical_name}}__{{field.name}}__hw_reset = 0;
+    {%- if field.is_software_readable() %}
+    register_read (register__{{register.hierarchical_name}}__address);
+    field_sw_read_data = (register_sw_read_data & register__{{register.hierarchical_name}}__{{field.name}}__mask) >> register__{{register.hierarchical_name}}__{{field.name}}__offset;
+    assert(field_sw_read_data === expected_data)
+      else $error("[%t] Incorrect value after hw reset for register field '{{register.hierarchical_name}}.{{field.name}}'. Expected '%0h' but got '%0h' instead.", $realtime, expected_data, field_sw_read_data);
+    {%- endif %} {#- field.is_software_readable #}
+    {%- if field.is_hardware_readable() %}
+    field_hw_read_data = register__{{register.hierarchical_name}}__{{field.name}};
+    assert(field_hw_read_data === expected_data)
+      else $error("[%t] Incorrect hardware value after hw reset for register field '{{register.hierarchical_name}}.{{field.name}}'. Expected '%0h' but got '%0h' instead.", $realtime, expected_data, field_hw_read_data);
+    {%- endif %} {#- field.is_hardware_readable #}
+    {%- endif %} {#- field.is_hardware_writable and RESET #}
+    {%- endfor %} {%- else %} {#- fields #}
+    {%- if register.is_hardware_writable() and register.has_hw_write_option(HardwareWriteOptions.RESET) and register.reset_value is not none %}
+    {§ spacing 1 §}
+    expected_data = register__{{register.hierarchical_name}}__reset_value;
+    register__{{register.hierarchical_name}}__hw_reset = 1;
+    @(negedge control__pclock);
+    register__{{register.hierarchical_name}}__hw_reset = 0;
+    {%- if register.is_software_readable() %}
+    register_read (register__{{register.hierarchical_name}}__address);
+    assert(register_sw_read_data === expected_data)
+      else $error("[%t] Incorrect value after hw reset for register '{{register.hierarchical_name}}'. Expected '%0h' but got '%0h' instead.", $realtime, expected_data, register_sw_read_data);
+    {%- endif %} {#- register.is_software_readable #}
+    {%- if register.is_hardware_readable() %}
+    register_hw_read_data = register__{{register.hierarchical_name}};
+    assert(register_hw_read_data === expected_data)
+      else $error("[%t] Incorrect hardware value after hw reset for register '{{register.hierarchical_name}}'. Expected '%0h' but got '%0h' instead.", $realtime, expected_data, register_hw_read_data);
+    {%- endif %} {#- register.is_hardware_readable #}
+    {%- endif %} {#- register.is_hardware_writable and RESET #}
+    {%- endif %} {#- fields #}
+    {%- endfor %} {#- registers #}
+
+    repeat(5) @(negedge control__pclock);
+
+
+    {§ spacing 2 §}
+
+
+    // Check 12 : Increment
+    $display("CHECK 12 : Increment.");
+    {%- for register in register_bank.registers %}
+    {%- if register.fields %} {%- for field in register.fields %}
+    {%- if field.is_hardware_writable() and field.has_hw_write_option(HardwareWriteOptions.INCREMENT) %}
+    {§ spacing 1 §}
+    expected_data = 1;
+    register__{{register.hierarchical_name}}__{{field.name}}__hw_increment = 1;
+    @(negedge control__pclock);
+    register__{{register.hierarchical_name}}__{{field.name}}__hw_increment = 0;
+    {%- if field.is_software_readable() %}
+    register_read (register__{{register.hierarchical_name}}__address);
+    field_sw_read_data = (register_sw_read_data & register__{{register.hierarchical_name}}__{{field.name}}__mask) >> register__{{register.hierarchical_name}}__{{field.name}}__offset;
+    assert(field_sw_read_data === expected_data)
+      else $error("[%t] Incorrect value after increment for register field '{{register.hierarchical_name}}.{{field.name}}'. Expected '%0h' but got '%0h' instead.", $realtime, expected_data, field_sw_read_data);
+    {%- endif %} {#- field.is_software_readable #}
+    {%- if field.is_hardware_readable() %}
+    field_hw_read_data = register__{{register.hierarchical_name}}__{{field.name}};
+    assert(field_hw_read_data === expected_data)
+      else $error("[%t] Incorrect hardware value after increment for register field '{{register.hierarchical_name}}.{{field.name}}'. Expected '%0h' but got '%0h' instead.", $realtime, expected_data, field_hw_read_data);
+    {%- endif %} {#- field.is_hardware_readable #}
+    {%- endif %} {#- field.is_hardware_writable and INCREMENT #}
+    {%- endfor %} {%- else %} {#- fields #}
+    {%- if register.is_hardware_writable() and register.has_hw_write_option(HardwareWriteOptions.INCREMENT) %}
+    {§ spacing 1 §}
+    expected_data = 1;
+    register__{{register.hierarchical_name}}__hw_increment = 1;
+    @(negedge control__pclock);
+    register__{{register.hierarchical_name}}__hw_increment = 0;
+    {%- if register.is_software_readable() %}
+    register_read (register__{{register.hierarchical_name}}__address);
+    assert(register_sw_read_data === expected_data)
+      else $error("[%t] Incorrect value after increment for register '{{register.hierarchical_name}}'. Expected '%0h' but got '%0h' instead.", $realtime, expected_data, register_sw_read_data);
+    {%- endif %} {#- register.is_software_readable #}
+    {%- if register.is_hardware_readable() %}
+    register_hw_read_data = register__{{register.hierarchical_name}};
+    assert(register_hw_read_data === expected_data)
+      else $error("[%t] Incorrect hardware value after increment for register '{{register.hierarchical_name}}'. Expected '%0h' but got '%0h' instead.", $realtime, expected_data, register_hw_read_data);
+    {%- endif %} {#- register.is_hardware_readable #}
+    {%- endif %} {#- register.is_hardware_writable and INCREMENT #}
+    {%- endif %} {#- fields #}
+    {%- endfor %} {#- registers #}
+
+    repeat(5) @(negedge control__pclock);
+
+
+    {§ spacing 2 §}
+
+
+    // Check 13 : Decrement
+    $display("CHECK 13 : Decrement.");
+    {%- for register in register_bank.registers %}
+    {%- if register.fields %} {%- for field in register.fields %}
+    {%- if field.is_hardware_writable() and field.has_hw_write_option(HardwareWriteOptions.DECREMENT) %}
+    {§ spacing 1 §}
+    expected_data = -1;
+    register__{{register.hierarchical_name}}__{{field.name}}__hw_decrement = 1;
+    @(negedge control__pclock);
+    register__{{register.hierarchical_name}}__{{field.name}}__hw_decrement = 0;
+    {%- if field.is_software_readable() %}
+    register_read (register__{{register.hierarchical_name}}__address);
+    field_sw_read_data = (register_sw_read_data & register__{{register.hierarchical_name}}__{{field.name}}__mask) >> register__{{register.hierarchical_name}}__{{field.name}}__offset;
+    assert(field_sw_read_data === expected_data)
+      else $error("[%t] Incorrect value after decrement for register field '{{register.hierarchical_name}}.{{field.name}}'. Expected '%0h' but got '%0h' instead.", $realtime, expected_data, field_sw_read_data);
+    {%- endif %} {#- field.is_software_readable #}
+    {%- if field.is_hardware_readable() %}
+    field_hw_read_data = register__{{register.hierarchical_name}}__{{field.name}};
+    assert(field_hw_read_data === expected_data)
+      else $error("[%t] Incorrect hardware value after decrement for register field '{{register.hierarchical_name}}.{{field.name}}'. Expected '%0h' but got '%0h' instead.", $realtime, expected_data, field_hw_read_data);
+    {%- endif %} {#- field.is_hardware_readable #}
+    {%- endif %} {#- field.is_hardware_writable and DECREMENT #}
+    {%- endfor %} {%- else %} {#- fields #}
+    {%- if register.is_hardware_writable() and register.has_hw_write_option(HardwareWriteOptions.DECREMENT) %}
+    {§ spacing 1 §}
+    expected_data = -1;
+    register__{{register.hierarchical_name}}__hw_decrement = 1;
+    @(negedge control__pclock);
+    register__{{register.hierarchical_name}}__hw_decrement = 0;
+    {%- if register.is_software_readable() %}
+    register_read (register__{{register.hierarchical_name}}__address);
+    assert(register_sw_read_data === expected_data)
+      else $error("[%t] Incorrect value after decrement for register '{{register.hierarchical_name}}'. Expected '%0h' but got '%0h' instead.", $realtime, expected_data, register_sw_read_data);
+    {%- endif %} {#- register.is_software_readable #}
+    {%- if register.is_hardware_readable() %}
+    register_hw_read_data = register__{{register.hierarchical_name}};
+    assert(register_hw_read_data === expected_data)
+      else $error("[%t] Incorrect hardware value after decrement for register '{{register.hierarchical_name}}'. Expected '%0h' but got '%0h' instead.", $realtime, expected_data, register_hw_read_data);
+    {%- endif %} {#- register.is_hardware_readable #}
+    {%- endif %} {#- register.is_hardware_writable and DECREMENT #}
     {%- endif %} {#- fields #}
     {%- endfor %} {#- registers #}
 
