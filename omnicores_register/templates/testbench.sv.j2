@@ -105,7 +105,7 @@ module {{register_bank.name}}__register_bank__testbench;
   // Registers
   {%- filter reindent(1) %}
   {%- filter autoformat_signal_definitions %}
-    {%  for register in register_bank.registers %}
+    {%-  for register in register_bank.registers %}
       {%- if register.fields %} {%- for field in register.fields %}
         {%- if field.is_hardware_readable() %}
           {%- if field.has_hw_read_option(HardwareReadOptions.DATA) %}
@@ -203,10 +203,10 @@ module {{register_bank.name}}__register_bank__testbench;
 
   // Register bank under test
   {{register_bank.name}}__register_bank {{register_bank.name}}__register_bank__dut (
-    {% filter remove_blank_lines -%}
-    {% filter remove_last_comma -%}
-    {% filter reindent(2) -%}
-    {% filter autoformat_instance_ports -%}
+    {%- filter remove_blank_lines %}
+    {%- filter remove_last_comma %}
+    {%- filter autoformat_instance_ports %}
+    {%- filter reindent(2) %}
 
     // Control interface
     .control__pclock   ( control__pclock   ),
@@ -314,8 +314,8 @@ module {{register_bank.name}}__register_bank__testbench;
       {%- endif %}
     {%- endfor %}
 
-    {%- endfilter %} {#- autoformat_instance_ports #}
     {%- endfilter %} {#- reindent #}
+    {%- endfilter %} {#- autoformat_instance_ports #}
     {%- endfilter %} {#- remove_last_comma #}
     {%- endfilter %} {#- remove_blank_lines #}
   );

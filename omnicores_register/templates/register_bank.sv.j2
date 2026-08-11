@@ -15,10 +15,10 @@
 
 {% filter restructure %}
 module {{register_bank.name}}__register_bank (
-{% filter remove_blank_lines -%}
-{% filter remove_last_comma -%}
-{% filter autoformat_module_ports -%}
-{% filter reindent(1) %}
+{%- filter remove_blank_lines %}
+{%- filter remove_last_comma %}
+{%- filter autoformat_module_ports %}
+{%- filter reindent(1) %}
 
   // Control interface
   input  logic        control__pclock,
@@ -141,7 +141,7 @@ module {{register_bank.name}}__register_bank (
   // Registers and fields storage
   {%- filter reindent(1) %}
   {%- filter autoformat_signal_definitions %}
-    {% for register in register_bank.registers %}
+    {%- for register in register_bank.registers %}
       {%- if register.fields %} {%- for field in register.fields %}
         logic {{field.width|arr}} register__{{register.hierarchical_name}}__{{field.name}}__storage;
       {%- endfor %} {%- else %}

@@ -29,7 +29,7 @@ package {{register_bank.name}}__register_bank__package;
         localparam integer §       § register__{{entry.prototype.hierarchical_name}}__length § = § {{entry.length}}; §§
         localparam integer §       § register__{{entry.prototype.hierarchical_name}}__stride § = § {{entry.stride}}; §§
         localparam logic § [31:0] §§ register__{{entry.prototype.hierarchical_name}}__base   § = § 32'h{{entry.address|hexadecimal}}; §§
-      {%- else %}
+      {% else %}
         {%- set register = entry %}
         localparam logic § [31:0] §§ register__{{register.hierarchical_name}}__address § = § 32'h{{register.address|hexadecimal}}; §§
         localparam integer §       § register__{{register.hierarchical_name}}__width   § = § {{register.width}}; §§
