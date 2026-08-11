@@ -58,3 +58,11 @@ class AccessibleComponent:
 
   def is_hardware_accessible(self) -> bool:
     return self.is_hardware_readable() or self.is_hardware_writable()
+
+  def has_hw_write_option(self, option:HardwareWriteOptions):
+    """Return True if the given HardwareWriteOptions flag is set on this component."""
+    return option in self.hw_write_options
+
+  def has_hw_read_option(self, option:HardwareReadOptions):
+    """Return True if the given HardwareReadOptions flag is set on this component."""
+    return option in self.hw_read_options

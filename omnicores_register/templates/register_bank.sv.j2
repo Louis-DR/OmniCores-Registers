@@ -17,8 +17,8 @@
 module {{register_bank.name}}__register_bank (
 {% filter remove_blank_lines -%}
 {% filter remove_last_comma -%}
-{% filter reindent(1) -%}
-{% filter autoformat_module_ports %}
+{% filter autoformat_module_ports -%}
+{% filter reindent(1) %}
 
   // Control interface
   input  logic        control__pclock,
@@ -38,22 +38,74 @@ module {{register_bank.name}}__register_bank (
         output logic {{field.width|arr}} register__{{register.hierarchical_name}}__{{field.name}},
       {%- endif %}
       {%- if field.is_hardware_writable() %}
-        input  logic                     register__{{register.hierarchical_name}}__{{field.name}}__hw_write_enable,
-        input  logic {{field.width|arr}} register__{{register.hierarchical_name}}__{{field.name}}__hw_write_data,
+        {%- if field.has_hw_write_option(HardwareWriteOptions.ENABLE) %}
+          input  logic                     register__{{register.hierarchical_name}}__{{field.name}}__hw_write_enable,
+          input  logic {{field.width|arr}} register__{{register.hierarchical_name}}__{{field.name}}__hw_write_data,
+        {%- endif %}
+        {%- if field.has_hw_write_option(HardwareWriteOptions.CONTINUOUS) %}
+          input  logic {{field.width|arr}} register__{{register.hierarchical_name}}__{{field.name}}__hw_write_data,
+        {%- endif %}
+        {%- if field.has_hw_write_option(HardwareWriteOptions.SET_MASK) %}
+          input  logic {{field.width|arr}} register__{{register.hierarchical_name}}__{{field.name}}__hw_set_mask,
+        {%- endif %}
+        {%- if field.has_hw_write_option(HardwareWriteOptions.SET_ALL) %}
+          input  logic                     register__{{register.hierarchical_name}}__{{field.name}}__hw_set_all,
+        {%- endif %}
+        {%- if field.has_hw_write_option(HardwareWriteOptions.CLEAR_MASK) %}
+          input  logic {{field.width|arr}} register__{{register.hierarchical_name}}__{{field.name}}__hw_clear_mask,
+        {%- endif %}
+        {%- if field.has_hw_write_option(HardwareWriteOptions.CLEAR_ALL) %}
+          input  logic                     register__{{register.hierarchical_name}}__{{field.name}}__hw_clear_all,
+        {%- endif %}
+        {%- if field.has_hw_write_option(HardwareWriteOptions.RESET) %}
+          input  logic                     register__{{register.hierarchical_name}}__{{field.name}}__hw_reset,
+        {%- endif %}
+        {%- if field.has_hw_write_option(HardwareWriteOptions.INCREMENT) %}
+          input  logic                     register__{{register.hierarchical_name}}__{{field.name}}__hw_increment,
+        {%- endif %}
+        {%- if field.has_hw_write_option(HardwareWriteOptions.DECREMENT) %}
+          input  logic                     register__{{register.hierarchical_name}}__{{field.name}}__hw_decrement,
+        {%- endif %}
       {%- endif %}
     {%- endfor %} {%- else %}
       {%- if register.is_hardware_readable() %}
         output logic {{register.width|arr}} register__{{register.hierarchical_name}},
       {%- endif %}
       {%- if register.is_hardware_writable() %}
-        input  logic                        register__{{register.hierarchical_name}}__hw_write_enable,
-        input  logic {{register.width|arr}} register__{{register.hierarchical_name}}__hw_write_data,
+        {%- if register.has_hw_write_option(HardwareWriteOptions.ENABLE) %}
+          input  logic                        register__{{register.hierarchical_name}}__hw_write_enable,
+          input  logic {{register.width|arr}} register__{{register.hierarchical_name}}__hw_write_data,
+        {%- endif %}
+        {%- if register.has_hw_write_option(HardwareWriteOptions.CONTINUOUS) %}
+          input  logic {{register.width|arr}} register__{{register.hierarchical_name}}__hw_write_data,
+        {%- endif %}
+        {%- if register.has_hw_write_option(HardwareWriteOptions.SET_MASK) %}
+          input  logic {{register.width|arr}} register__{{register.hierarchical_name}}__hw_set_mask,
+        {%- endif %}
+        {%- if register.has_hw_write_option(HardwareWriteOptions.SET_ALL) %}
+          input  logic                        register__{{register.hierarchical_name}}__hw_set_all,
+        {%- endif %}
+        {%- if register.has_hw_write_option(HardwareWriteOptions.CLEAR_MASK) %}
+          input  logic {{register.width|arr}} register__{{register.hierarchical_name}}__hw_clear_mask,
+        {%- endif %}
+        {%- if register.has_hw_write_option(HardwareWriteOptions.CLEAR_ALL) %}
+          input  logic                        register__{{register.hierarchical_name}}__hw_clear_all,
+        {%- endif %}
+        {%- if register.has_hw_write_option(HardwareWriteOptions.RESET) %}
+          input  logic                        register__{{register.hierarchical_name}}__hw_reset,
+        {%- endif %}
+        {%- if register.has_hw_write_option(HardwareWriteOptions.INCREMENT) %}
+          input  logic                        register__{{register.hierarchical_name}}__hw_increment,
+        {%- endif %}
+        {%- if register.has_hw_write_option(HardwareWriteOptions.DECREMENT) %}
+          input  logic                        register__{{register.hierarchical_name}}__hw_decrement,
+        {%- endif %}
       {%- endif %}
     {%- endif %}
   {%- endfor %}
 
-{%- endfilter %} {#- autoformat_module_ports #}
 {%- endfilter %} {#- reindent #}
+{%- endfilter %} {#- autoformat_module_ports #}
 {%- endfilter %} {#- remove_last_comma #}
 {%- endfilter %} {#- remove_blank_lines #}
 );
@@ -140,11 +192,87 @@ module {{register_bank.name}}__register_bank (
       {%- for register in register_bank.registers %}
         {%- if register.fields %} {%- for field in register.fields %}
           {%- if field.is_hardware_writable() %}
-            if (register__{{register.hierarchical_name}}__{{field.name}}__hw_write_enable) § register__{{register.hierarchical_name}}__{{field.name}}__storage § <= register__{{register.hierarchical_name}}__{{field.name}}__hw_write_data;
+            {%- set first = true %}
+            {%- if field.has_hw_write_option(HardwareWriteOptions.ENABLE) %}
+              if § (register__{{register.hierarchical_name}}__{{field.name}}__hw_write_enable) § register__{{register.hierarchical_name}}__{{field.name}}__storage § <= register__{{register.hierarchical_name}}__{{field.name}}__hw_write_data;
+              {%- set first = false %}
+            {%- endif %}
+            {%- if field.has_hw_write_option(HardwareWriteOptions.CONTINUOUS) %}
+              else § § register__{{register.hierarchical_name}}__{{field.name}}__storage § <= register__{{register.hierarchical_name}}__{{field.name}}__hw_write_data;
+              {%- set first = false %}
+            {%- endif %}
+            {%- if field.has_hw_write_option(HardwareWriteOptions.SET_MASK) %}
+              {% if not first %}else {% endif %}if § (|register__{{register.hierarchical_name}}__{{field.name}}__hw_set_mask) § register__{{register.hierarchical_name}}__{{field.name}}__storage § <= register__{{register.hierarchical_name}}__{{field.name}}__storage | register__{{register.hierarchical_name}}__{{field.name}}__hw_set_mask;
+              {%- set first = false %}
+            {%- endif %}
+            {%- if field.has_hw_write_option(HardwareWriteOptions.SET_ALL) %}
+              {% if not first %}else {% endif %}if § (register__{{register.hierarchical_name}}__{{field.name}}__hw_set_all) § register__{{register.hierarchical_name}}__{{field.name}}__storage § <= { {{field.width}} {1'b1} };
+              {%- set first = false %}
+            {%- endif %}
+            {%- if field.has_hw_write_option(HardwareWriteOptions.CLEAR_MASK) %}
+              {% if not first %}else {% endif %}if § (|register__{{register.hierarchical_name}}__{{field.name}}__hw_clear_mask) § register__{{register.hierarchical_name}}__{{field.name}}__storage § <= register__{{register.hierarchical_name}}__{{field.name}}__storage & ~register__{{register.hierarchical_name}}__{{field.name}}__hw_clear_mask;
+              {%- set first = false %}
+            {%- endif %}
+            {%- if field.has_hw_write_option(HardwareWriteOptions.CLEAR_ALL) %}
+              {% if not first %}else {% endif %}if § (register__{{register.hierarchical_name}}__{{field.name}}__hw_clear_all) § register__{{register.hierarchical_name}}__{{field.name}}__storage § <= { {{field.width}} {1'b0} };
+              {%- set first = false %}
+            {%- endif %}
+            {%- if field.has_hw_write_option(HardwareWriteOptions.RESET) %}
+              {%- if field.reset_value is not none %}
+                {% if not first %}else {% endif %}if § (register__{{register.hierarchical_name}}__{{field.name}}__hw_reset) § register__{{register.hierarchical_name}}__{{field.name}}__storage § <= {{field.width}}'h{{field.reset_value|hexadecimal}};
+              {%- endif %}
+              {%- set first = false %}
+            {%- endif %}
+            {%- if field.has_hw_write_option(HardwareWriteOptions.INCREMENT) %}
+              {% if not first %}else {% endif %}if § (register__{{register.hierarchical_name}}__{{field.name}}__hw_increment) § register__{{register.hierarchical_name}}__{{field.name}}__storage § <= register__{{register.hierarchical_name}}__{{field.name}}__storage + 1;
+              {%- set first = false %}
+            {%- endif %}
+            {%- if field.has_hw_write_option(HardwareWriteOptions.DECREMENT) %}
+              {% if not first %}else {% endif %}if § (register__{{register.hierarchical_name}}__{{field.name}}__hw_decrement) § register__{{register.hierarchical_name}}__{{field.name}}__storage § <= register__{{register.hierarchical_name}}__{{field.name}}__storage - 1;
+              {%- set first = false %}
+            {%- endif %}
           {%- endif %} {#- field.is_hardware_writable #}
         {%- endfor %} {%- else %} {#- fields #}
           {%- if register.is_hardware_writable() %}
-            if (register__{{register.hierarchical_name}}__hw_write_enable) § register__{{register.hierarchical_name}}__storage § <= register__{{register.hierarchical_name}}__hw_write_data;
+            {%- set first = true %}
+            {%- if register.has_hw_write_option(HardwareWriteOptions.ENABLE) %}
+              if § (register__{{register.hierarchical_name}}__hw_write_enable) § register__{{register.hierarchical_name}}__storage § <= register__{{register.hierarchical_name}}__hw_write_data;
+              {%- set first = false %}
+            {%- endif %}
+            {%- if register.has_hw_write_option(HardwareWriteOptions.CONTINUOUS) %}
+              else § § register__{{register.hierarchical_name}}__storage § <= register__{{register.hierarchical_name}}__hw_write_data;
+              {%- set first = false %}
+            {%- endif %}
+            {%- if register.has_hw_write_option(HardwareWriteOptions.SET_MASK) %}
+              {% if not first %}else {% endif %}if § (|register__{{register.hierarchical_name}}__hw_set_mask) § register__{{register.hierarchical_name}}__storage § <= register__{{register.hierarchical_name}}__storage | register__{{register.hierarchical_name}}__hw_set_mask;
+              {%- set first = false %}
+            {%- endif %}
+            {%- if register.has_hw_write_option(HardwareWriteOptions.SET_ALL) %}
+              {% if not first %}else {% endif %}if § (register__{{register.hierarchical_name}}__hw_set_all) § register__{{register.hierarchical_name}}__storage § <= { {{register.width}} {1'b1} };
+              {%- set first = false %}
+            {%- endif %}
+            {%- if register.has_hw_write_option(HardwareWriteOptions.CLEAR_MASK) %}
+              {% if not first %}else {% endif %}if § (|register__{{register.hierarchical_name}}__hw_clear_mask) § register__{{register.hierarchical_name}}__storage § <= register__{{register.hierarchical_name}}__storage & ~register__{{register.hierarchical_name}}__hw_clear_mask;
+              {%- set first = false %}
+            {%- endif %}
+            {%- if register.has_hw_write_option(HardwareWriteOptions.CLEAR_ALL) %}
+              {% if not first %}else {% endif %}if § (register__{{register.hierarchical_name}}__hw_clear_all) § register__{{register.hierarchical_name}}__storage § <= { {{register.width}} {1'b0} };
+              {%- set first = false %}
+            {%- endif %}
+            {%- if register.has_hw_write_option(HardwareWriteOptions.RESET) %}
+              {%- if register.reset_value is not none %}
+                {% if not first %}else {% endif %}if § (register__{{register.hierarchical_name}}__hw_reset) § register__{{register.hierarchical_name}}__storage § <= {{register.width}}'h{{register.reset_value|hexadecimal}};
+              {%- endif %}
+              {%- set first = false %}
+            {%- endif %}
+            {%- if register.has_hw_write_option(HardwareWriteOptions.INCREMENT) %}
+              {% if not first %}else {% endif %}if § (register__{{register.hierarchical_name}}__hw_increment) § register__{{register.hierarchical_name}}__storage § <= register__{{register.hierarchical_name}}__storage + 1;
+              {%- set first = false %}
+            {%- endif %}
+            {%- if register.has_hw_write_option(HardwareWriteOptions.DECREMENT) %}
+              {% if not first %}else {% endif %}if § (register__{{register.hierarchical_name}}__hw_decrement) § register__{{register.hierarchical_name}}__storage § <= register__{{register.hierarchical_name}}__storage - 1;
+              {%- set first = false %}
+            {%- endif %}
           {%- endif %} {#- register.is_hardware_writable #}
         {%- endif %} {#- fields #}
       {%- endfor %} {#- registers #}

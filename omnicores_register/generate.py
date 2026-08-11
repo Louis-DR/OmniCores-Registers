@@ -17,6 +17,7 @@ from pathlib import Path
 from omnicores_register.register import Register
 from omnicores_register.register_file import RegisterFile
 from omnicores_register.component_array import ComponentArray
+from omnicores_register.enums import HardwareWriteOptions, HardwareReadOptions
 
 
 
@@ -66,6 +67,8 @@ def generate(self):
   render_engine.define_variable('Register', Register)
   render_engine.define_variable('RegisterFile', RegisterFile)
   render_engine.define_variable('ComponentArray', ComponentArray)
+  render_engine.define_variable('HardwareWriteOptions', HardwareWriteOptions)
+  render_engine.define_variable('HardwareReadOptions', HardwareReadOptions)
 
   # Path objects
   register_bank_name = f'{self.name}__register_bank'
@@ -73,9 +76,9 @@ def generate(self):
   output_folder      = Path(register_bank_name)
 
   # Render each templates
-  render_template(render_engine, template_folder / 'register_bank.sv.j2', output_folder/ f'{register_bank_name}.sv')
-  render_template(render_engine, template_folder / 'package.sv.j2',       output_folder/ f'{register_bank_name}.package.sv')
-  render_template(render_engine, template_folder / 'testbench.sv.j2',     output_folder/ f'{register_bank_name}.testbench.sv')
-  render_template(render_engine, template_folder / 'macros.h.j2',         output_folder/ f'{register_bank_name}.macros.h')
-  render_template(render_engine, template_folder / 'structs.h.j2',        output_folder/ f'{register_bank_name}.structs.h')
+  render_template(render_engine, template_folder / 'register_bank.sv.j2',   output_folder/ f'{register_bank_name}.sv')
+  render_template(render_engine, template_folder / 'package.sv.j2',         output_folder/ f'{register_bank_name}.package.sv')
+  render_template(render_engine, template_folder / 'testbench.sv.j2',       output_folder/ f'{register_bank_name}.testbench.sv')
+  render_template(render_engine, template_folder / 'macros.h.j2',           output_folder/ f'{register_bank_name}.macros.h')
+  render_template(render_engine, template_folder / 'structs.h.j2',          output_folder/ f'{register_bank_name}.structs.h')
   render_template(render_engine, template_folder / 'documentation.html.j2', output_folder/ f'{register_bank_name}.html')
