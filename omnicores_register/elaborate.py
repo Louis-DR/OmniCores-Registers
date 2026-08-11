@@ -192,6 +192,15 @@ def _elaborate_field_offsets(container):
 
 
 
+def _cleanup_access_options(component):
+  """Disable irrelevant hardware read/write options on a component."""
+  if not component.is_hardware_readable():
+    component.hw_read_options = HardwareReadOptions(0)
+  if not component.is_hardware_writable():
+    component.hw_write_options = HardwareWriteOptions(0)
+
+
+
 def _elaborate_access_policies(container):
   """Compute software and hardware access policies for registers and fields."""
   for register in container.registers:
@@ -203,12 +212,14 @@ def _elaborate_access_policies(container):
         field.hw_read_options   = field.hw_read_options   or register.hw_read_options   or field_default_hw_read_options
         field.sw_write_behavior = field.sw_write_behavior or register.sw_write_behavior or field_default_sw_write_behavior
         field.sw_read_behavior  = field.sw_read_behavior  or register.sw_read_behavior  or field_default_sw_read_behavior
+        _cleanup_access_options(field)
     register.software_access   = register.software_access   or register_default_software_access
     register.hardware_access   = register.hardware_access   or register_default_hardware_access
     register.hw_write_options  = register.hw_write_options  or register_default_hw_write_options
     register.hw_read_options   = register.hw_read_options   or register_default_hw_read_options
     register.sw_write_behavior = register.sw_write_behavior or register_default_sw_write_behavior
     register.sw_read_behavior  = register.sw_read_behavior  or register_default_sw_read_behavior
+    _cleanup_access_options(register)
     if register.fields:
       _upgrade_register_access_from_fields(register)
   _elaborate_array_prototype_access(container)
@@ -235,7 +246,9 @@ def _elaborate_array_prototype_access(container):
             field.hw_read_options   = field.hw_read_options   or prototype.hw_read_options   or field_default_hw_read_options
             field.sw_write_behavior = field.sw_write_behavior or prototype.sw_write_behavior or field_default_sw_write_behavior
             field.sw_read_behavior  = field.sw_read_behavior  or prototype.sw_read_behavior  or field_default_sw_read_behavior
+            _cleanup_access_options(field)
           _upgrade_register_access_from_fields(prototype)
+        _cleanup_access_options(prototype)
       elif isinstance(prototype, RegisterFile):
         _elaborate_array_prototype_access(prototype)
     elif isinstance(component, Register):
@@ -253,7 +266,9 @@ def _elaborate_array_prototype_access(container):
           field.hw_read_options   = field.hw_read_options   or component.hw_read_options   or field_default_hw_read_options
           field.sw_write_behavior = field.sw_write_behavior or component.sw_write_behavior or field_default_sw_write_behavior
           field.sw_read_behavior  = field.sw_read_behavior  or component.sw_read_behavior  or field_default_sw_read_behavior
+          _cleanup_access_options(field)
         _upgrade_register_access_from_fields(component)
+      _cleanup_access_options(component)
     elif isinstance(component, RegisterFile):
       _elaborate_array_prototype_access(component)
 

@@ -35,7 +35,18 @@ module {{register_bank.name}}__register_bank (
   {%- for register in register_bank.registers %}
     {%- if register.fields %} {%- for field in register.fields %}
       {%- if field.is_hardware_readable() %}
-        output logic {{field.width|arr}} register__{{register.hierarchical_name}}__{{field.name}},
+        {%- if field.has_hw_read_option(HardwareReadOptions.DATA) %}
+          output logic {{field.width|arr}} register__{{register.hierarchical_name}}__{{field.name}},
+        {%- endif %}
+        {%- if field.has_hw_read_option(HardwareReadOptions.ANDED) %}
+          output logic                     register__{{register.hierarchical_name}}__{{field.name}}__anded,
+        {%- endif %}
+        {%- if field.has_hw_read_option(HardwareReadOptions.ORED) %}
+          output logic                     register__{{register.hierarchical_name}}__{{field.name}}__ored,
+        {%- endif %}
+        {%- if field.has_hw_read_option(HardwareReadOptions.XORED) %}
+          output logic                     register__{{register.hierarchical_name}}__{{field.name}}__xored,
+        {%- endif %}
       {%- endif %}
       {%- if field.is_hardware_writable() %}
         {%- if field.has_hw_write_option(HardwareWriteOptions.ENABLE) %}
@@ -69,7 +80,18 @@ module {{register_bank.name}}__register_bank (
       {%- endif %}
     {%- endfor %} {%- else %}
       {%- if register.is_hardware_readable() %}
-        output logic {{register.width|arr}} register__{{register.hierarchical_name}},
+        {%- if register.has_hw_read_option(HardwareReadOptions.DATA) %}
+          output logic {{register.width|arr}} register__{{register.hierarchical_name}},
+        {%- endif %}
+        {%- if register.has_hw_read_option(HardwareReadOptions.ANDED) %}
+          output logic                        register__{{register.hierarchical_name}}__anded,
+        {%- endif %}
+        {%- if register.has_hw_read_option(HardwareReadOptions.ORED) %}
+          output logic                        register__{{register.hierarchical_name}}__ored,
+        {%- endif %}
+        {%- if register.has_hw_read_option(HardwareReadOptions.XORED) %}
+          output logic                        register__{{register.hierarchical_name}}__xored,
+        {%- endif %}
       {%- endif %}
       {%- if register.is_hardware_writable() %}
         {%- if register.has_hw_write_option(HardwareWriteOptions.ENABLE) %}
@@ -350,9 +372,31 @@ module {{register_bank.name}}__register_bank (
   {%- filter reindent(1) %}
     {%- for register in register_bank.registers %}
       {%- if register.fields %} {%- for field in register.fields %}
-        assign register__{{register.hierarchical_name}}__{{field.name}} § = register__{{register.hierarchical_name}}__{{field.name}}__storage;
+        {%- if field.has_hw_read_option(HardwareReadOptions.DATA) %}
+          assign register__{{register.hierarchical_name}}__{{field.name}}        § = register__{{register.hierarchical_name}}__{{field.name}}__storage;
+        {%- endif %}
+        {%- if field.has_hw_read_option(HardwareReadOptions.ANDED) %}
+          assign register__{{register.hierarchical_name}}__{{field.name}}__anded § = &register__{{register.hierarchical_name}}__{{field.name}}__storage;
+        {%- endif %}
+        {%- if field.has_hw_read_option(HardwareReadOptions.ORED) %}
+          assign register__{{register.hierarchical_name}}__{{field.name}}__ored  § = |register__{{register.hierarchical_name}}__{{field.name}}__storage;
+        {%- endif %}
+        {%- if field.has_hw_read_option(HardwareReadOptions.XORED) %}
+          assign register__{{register.hierarchical_name}}__{{field.name}}__xored § = ^register__{{register.hierarchical_name}}__{{field.name}}__storage;
+        {%- endif %}
       {%- endfor %} {%- else %}
-        assign register__{{register.hierarchical_name}} § = register__{{register.hierarchical_name}}__storage;
+        {%- if register.has_hw_read_option(HardwareReadOptions.DATA) %}
+          assign register__{{register.hierarchical_name}}        § = register__{{register.hierarchical_name}}__storage;
+        {%- endif %}
+        {%- if register.has_hw_read_option(HardwareReadOptions.ANDED) %}
+          assign register__{{register.hierarchical_name}}__anded § = &register__{{register.hierarchical_name}}__storage;
+        {%- endif %}
+        {%- if register.has_hw_read_option(HardwareReadOptions.ORED) %}
+          assign register__{{register.hierarchical_name}}__ored  § = |register__{{register.hierarchical_name}}__storage;
+        {%- endif %}
+        {%- if register.has_hw_read_option(HardwareReadOptions.XORED) %}
+          assign register__{{register.hierarchical_name}}__xored § = ^register__{{register.hierarchical_name}}__storage;
+        {%- endif %}
       {%- endif %}
     {%- endfor %}
   {%- endfilter %} {#- reindent #}
