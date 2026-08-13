@@ -58,7 +58,7 @@
 
     <section id="register-{{expanded.hierarchical_name|escape}}">
       <h2>
-        <span class="component-address"><span class="mono copyable">0x{{expanded.address|hexadecimal}}</span></span>
+        <span class="component-address"><span class="mono copyable">0x{{expanded.address|hexadecimal(register_bank.address_width_nibbles)}}</span></span>
         <span class="component-breadcrumbs"><!--
           {%- for part in expanded.get_breadcrumbs() %}
             {%- if not loop.last %}
@@ -148,7 +148,7 @@
 
     <section id="file-{{expanded.hierarchical_name|escape}}" class="file-section">
       <h2>
-        <span class="component-address"><span class="mono copyable">0x{{expanded.address|hexadecimal}}</span> - <span class="mono copyable">0x{{(expanded.address + expanded.size)|hexadecimal}}</span></span>
+        <span class="component-address"><span class="mono copyable">0x{{expanded.address|hexadecimal(register_bank.address_width_nibbles)}}</span> - <span class="mono copyable">0x{{(expanded.address + expanded.size)|hexadecimal(register_bank.address_width_nibbles)}}</span></span>
         <span class="component-breadcrumbs"><!--
           {%- for part in expanded.get_breadcrumbs() %}
             {%- if not loop.last %}
@@ -171,8 +171,8 @@
         {%- if expanded.hierarchical_name != expanded.name %}
         <tr><td>Hierarchical Name</td><td class="mono">{{expanded.hierarchical_name}}</td></tr>
         {%- endif %}
-        <tr><td>Base Address</td><td class="mono">0x{{expanded.address|hexadecimal}}</td></tr>
-        <tr><td>End Address</td><td class="mono">0x{{(expanded.address + expanded.size)|hexadecimal}}</td></tr>
+        <tr><td>Base Address</td><td class="mono">0x{{expanded.address|hexadecimal(register_bank.address_width_nibbles)}}</td></tr>
+        <tr><td>End Address</td><td class="mono">0x{{(expanded.address + expanded.size)|hexadecimal(register_bank.address_width_nibbles)}}</td></tr>
         <tr><td>Size</td><td><span class="mono">0x{{expanded.size|hexadecimal}}</span> ({{expanded.size}} bytes)</td></tr>
       </table>
 
@@ -196,7 +196,7 @@
               <a class="mono" href="{% if first is type(Register) %}#register-{{first.hierarchical_name|escape}}{% else %}#file-{{first.hierarchical_name|escape}}{% endif %}">{{child.prototype.name}}[{{child.length}}]</a>
             </strong></td>
             <td>{% if child.prototype.width is defined %}Register Array{% else %}File Array{% endif %}</td>
-            <td class="mono">0x{{child.address|hexadecimal}}</td>
+            <td class="mono">0x{{child.address|hexadecimal(register_bank.address_width_nibbles)}}</td>
             <td class="mono">{% if child.prototype.width is defined %}{{child.prototype.width}} bits × {{child.length}}{% else %}{{child.prototype.size}} bytes × {{child.length}}{% endif %}</td>
           </tr>
           {%- elif child is type(Register) %}
@@ -205,7 +205,7 @@
               <a class="mono" href="#register-{{child.hierarchical_name|escape}}">{{child.name}}</a>
             </strong></td>
             <td>Register</td>
-            <td class="mono">0x{{child.address|hexadecimal}}</td>
+            <td class="mono">0x{{child.address|hexadecimal(register_bank.address_width_nibbles)}}</td>
             <td class="mono">{{child.width}} bits</td>
           </tr>
           {%- else -%}
@@ -214,7 +214,7 @@
               <a class="mono" href="#file-{{child.hierarchical_name|escape}}">{{child.name}}</a>
             </strong></td>
             <td>Register File</td>
-            <td class="mono">0x{{child.address|hexadecimal}}</td>
+            <td class="mono">0x{{child.address|hexadecimal(register_bank.address_width_nibbles)}}</td>
             <td class="mono">{{child.size}} bytes</td>
           </tr>
           {%- endif %}
@@ -233,7 +233,7 @@
 
     <section id="register-{{component.hierarchical_name|escape}}">
       <h2>
-        <span class="component-address"><span class="mono copyable">0x{{component.address|hexadecimal}}</span></span>
+        <span class="component-address"><span class="mono copyable">0x{{component.address|hexadecimal(register_bank.address_width_nibbles)}}</span></span>
         <span class="component-breadcrumbs"><!--
           {%- for part in component.get_breadcrumbs() %}
             {%- if not loop.last %}
@@ -323,7 +323,7 @@
 
     <section id="file-{{component.hierarchical_name|escape}}" class="file-section">
       <h2>
-        <span class="component-address"><span class="mono copyable">0x{{component.address|hexadecimal}}</span> - <span class="mono copyable">0x{{(component.address + component.size)|hexadecimal}}</span></span>
+        <span class="component-address"><span class="mono copyable">0x{{component.address|hexadecimal(register_bank.address_width_nibbles)}}</span> - <span class="mono copyable">0x{{(component.address + component.size)|hexadecimal(register_bank.address_width_nibbles)}}</span></span>
         <span class="component-breadcrumbs"><!--
           {%- for part in component.get_breadcrumbs() %}
             {%- if not loop.last %}
@@ -346,8 +346,8 @@
         {%- if component.hierarchical_name != component.name %}
         <tr><td>Hierarchical Name</td><td class="mono">{{component.hierarchical_name}}</td></tr>
         {%- endif %}
-        <tr><td>Base Address</td><td class="mono">0x{{component.address|hexadecimal}}</td></tr>
-        <tr><td>End Address</td><td class="mono">0x{{(component.address + component.size)|hexadecimal}}</td></tr>
+        <tr><td>Base Address</td><td class="mono">0x{{component.address|hexadecimal(register_bank.address_width_nibbles)}}</td></tr>
+        <tr><td>End Address</td><td class="mono">0x{{(component.address + component.size)|hexadecimal(register_bank.address_width_nibbles)}}</td></tr>
         <tr><td>Size</td><td><span class="mono">0x{{component.size|hexadecimal}}</span> ({{component.size}} bytes)</td></tr>
       </table>
 
@@ -371,7 +371,7 @@
               <a class="mono" href="{% if first is type(Register) %}#register-{{first.hierarchical_name|escape}}{% else %}#file-{{first.hierarchical_name|escape}}{% endif %}">{{child.prototype.name}}[{{child.length}}]</a>
             </strong></td>
             <td>{% if child.prototype.width is defined %}Register Array{% else %}File Array{% endif %}</td>
-            <td class="mono">0x{{child.address|hexadecimal}}</td>
+            <td class="mono">0x{{child.address|hexadecimal(register_bank.address_width_nibbles)}}</td>
             <td class="mono">{% if child.prototype.width is defined %}{{child.prototype.width}} bits × {{child.length}}{% else %}{{child.prototype.size}} bytes × {{child.length}}{% endif %}</td>
           </tr>
           {%- elif child is type(Register) %}
@@ -380,7 +380,7 @@
               <a class="mono" href="#register-{{child.hierarchical_name|escape}}">{{child.name}}</a>
             </strong></td>
             <td>Register</td>
-            <td class="mono">0x{{child.address|hexadecimal}}</td>
+            <td class="mono">0x{{child.address|hexadecimal(register_bank.address_width_nibbles)}}</td>
             <td class="mono">{{child.width}} bits</td>
           </tr>
           {%- else -%}
@@ -389,7 +389,7 @@
               <a class="mono" href="#file-{{child.hierarchical_name|escape}}">{{child.name}}</a>
             </strong></td>
             <td>Register File</td>
-            <td class="mono">0x{{child.address|hexadecimal}}</td>
+            <td class="mono">0x{{child.address|hexadecimal(register_bank.address_width_nibbles)}}</td>
             <td class="mono">{{child.size}} bytes</td>
           </tr>
           {%- endif %}
@@ -930,7 +930,7 @@
                 {{component.hierarchical_name}}
               </a>
             </td>
-            <td class="mono"><span class="copyable">0x{{component.address|hexadecimal}}</span></td>
+            <td class="mono"><span class="copyable">0x{{component.address|hexadecimal(register_bank.address_width_nibbles)}}</span></td>
           </tr>
         {%- endfor -%}
         </tbody>

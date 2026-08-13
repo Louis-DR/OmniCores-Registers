@@ -38,7 +38,7 @@ module {{register_bank.name}}__register_bank__testbench;
   logic        control__psel;
   logic        control__penable;
   logic        control__pready;
-  logic [31:0] control__paddr;
+  logic {{register_bank.address_width|arr}} control__paddr;
   logic        control__pwrite;
   logic [31:0] control__pwdata;
   logic [31:0] control__prdata;
@@ -53,7 +53,7 @@ module {{register_bank.name}}__register_bank__testbench;
 
   // Write task
   task automatic register_write;
-    input logic [31:0] address;
+    input logic {{register_bank.address_width|arr}} address;
     input logic [31:0] data;
     control__psel    = 1;
     control__penable = 0;
@@ -81,7 +81,7 @@ module {{register_bank.name}}__register_bank__testbench;
   logic [31:0] field_hw_write_data;
   logic [31:0] hw_test_data;
   task automatic register_read;
-    input logic [31:0] address;
+    input logic {{register_bank.address_width|arr}} address;
     control__psel    = 1;
     control__penable = 0;
     control__pwrite  = 0;

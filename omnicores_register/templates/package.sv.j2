@@ -26,14 +26,14 @@ package {{register_bank.name}}__register_bank__package;
   {%- filter reindent(1) %}
     {%- for kind, entry in register_bank.get_register_macros_ordered() %}
       {%- if kind == 'array_meta' %}
-        localparam integer §       § register__{{entry.prototype.hierarchical_name}}__length § = § {{entry.length}}; §§
-        localparam integer §       § register__{{entry.prototype.hierarchical_name}}__stride § = § {{entry.stride}}; §§
-        localparam logic § [31:0] §§ register__{{entry.prototype.hierarchical_name}}__base   § = § 32'h{{entry.address|hexadecimal}}; §§
+        localparam logic § {{register_bank.address_width|arr}} §§ register__{{entry.prototype.hierarchical_name}}__base   § = § {{register_bank.address_width}}'h{{entry.address|hexadecimal(register_bank.address_width_nibbles)}}; §§
+        localparam integer §                                    § register__{{entry.prototype.hierarchical_name}}__length § = § {{entry.length}}; §§
+        localparam integer §                                    § register__{{entry.prototype.hierarchical_name}}__stride § = § {{entry.stride}}; §§
       {% else %}
         {%- set register = entry %}
-        localparam logic § [31:0] §§ register__{{register.hierarchical_name}}__address § = § 32'h{{register.address|hexadecimal}}; §§
-        localparam integer §       § register__{{register.hierarchical_name}}__width   § = § {{register.width}}; §§
-        localparam logic § [31:0] §§ register__{{register.hierarchical_name}}__mask    § = § 32'h{{(2**register.width-1)|hexadecimal}}; §§
+        localparam logic § {{register_bank.address_width|arr}} §§ register__{{register.hierarchical_name}}__address § = § {{register_bank.address_width}}'h{{register.address|hexadecimal(register_bank.address_width_nibbles)}}; §§
+        localparam integer §                                    § register__{{register.hierarchical_name}}__width   § = § {{register.width}}; §§
+        localparam logic § [31:0]                              §§ register__{{register.hierarchical_name}}__mask    § = § 32'h{{(2**register.width-1)|hexadecimal}}; §§
         {%- if register.reset_value is not none %}
           localparam logic § {{register.width|arr}} §§ register__{{register.hierarchical_name}}__reset_value § = § {{register.width}}'h{{register.reset_value|hexadecimal}}; §§
         {%- endif %}

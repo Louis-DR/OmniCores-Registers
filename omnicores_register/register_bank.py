@@ -31,6 +31,10 @@ class RegisterBank(ComponentContainer):
     # Flag set during elaboration if any register or field has non-NORMAL software read behavior
     self.has_sw_read_side_effect = False
 
+    # Bit width of the address signal (set during elaboration)
+    self.address_width         = 0
+    self.address_width_nibbles = 0
+
   # Import the methods from their dedicated files
   elaborate = elaborate
   validate  = validate

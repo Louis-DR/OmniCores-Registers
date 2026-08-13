@@ -10,7 +10,7 @@
 
 
 
-from math import ceil
+from math import ceil, log2
 from omnicores_register.utils import next_power_of_two
 from omnicores_register.register_file import RegisterFile
 from omnicores_register.register import Register
@@ -439,9 +439,9 @@ def _elaborate_component_padding(container, container_address):
 
 
 
-def _elaborate_field_padding(container):
+def _elaborate_field_padding(bank):
   """Compute firmware struct padding for software-visible fields."""
-  for register in container.registers:
+  for register in bank.registers:
     if register.fields:
       previous_offset = 0
       for field in register.fields:
@@ -449,6 +449,15 @@ def _elaborate_field_padding(container):
           field.sw_struct_padding = field.offset - previous_offset
           previous_offset = field.offset + field.width
       register.sw_struct_fields_padding = 32 - previous_offset
+
+
+
+def _elaborate_bank_address_width(bank):
+  """Compute the bit width of the address signal."""
+  last_address = max(bank.registers, key=lambda register : register.address).address
+  last_address_pow2 = next_power_of_two(last_address)
+  bank.address_width = int(log2(last_address_pow2))
+  bank.address_width_nibbles = ceil(bank.address_width / 4)
 
 
 
@@ -485,3 +494,6 @@ def elaborate(self):
 
   # Padding before each field for the firmware bitfield struct
   _elaborate_field_padding(self)
+
+  # Bank address bus width
+  _elaborate_bank_address_width(self)

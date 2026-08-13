@@ -29,10 +29,10 @@
     {%- if kind == 'array_meta' %}
       #define {{register_bank.name|upper}}__{{entry.prototype.hierarchical_name|upper}}__LENGTH § {{entry.length}} §§
       #define {{register_bank.name|upper}}__{{entry.prototype.hierarchical_name|upper}}__STRIDE § 0x{{entry.stride|hexadecimal}} §§
-      #define {{register_bank.name|upper}}__{{entry.prototype.hierarchical_name|upper}}__BASE   § 0x{{entry.address|hexadecimal}} §§
+      #define {{register_bank.name|upper}}__{{entry.prototype.hierarchical_name|upper}}__BASE   § 0x{{entry.address|hexadecimal(register_bank.address_width_nibbles)}} §§
     {%- else %}
       {%- set register = entry %}
-      #define {{register_bank.name|upper}}__{{register.hierarchical_name|upper}}__ADDRESS § 0x{{register.address|hexadecimal}} §§
+      #define {{register_bank.name|upper}}__{{register.hierarchical_name|upper}}__ADDRESS § 0x{{register.address|hexadecimal(register_bank.address_width_nibbles)}} §§
       #define {{register_bank.name|upper}}__{{register.hierarchical_name|upper}}__WIDTH   § {{register.width}} §§
       #define {{register_bank.name|upper}}__{{register.hierarchical_name|upper}}__MASK    § 0x{{(2**register.width-1)|hexadecimal}} §§
       {%- if register.reset_value is not none %}

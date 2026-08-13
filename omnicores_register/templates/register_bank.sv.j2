@@ -26,7 +26,7 @@ module {{register_bank.name}}__register_bank (
   input  logic        control__psel,
   input  logic        control__penable,
   output logic        control__pready,
-  input  logic [31:0] control__paddr,
+  input  logic {{register_bank.address_width|arr}} control__paddr,
   input  logic        control__pwrite,
   input  logic [31:0] control__pwdata,
   output logic [31:0] control__prdata,
