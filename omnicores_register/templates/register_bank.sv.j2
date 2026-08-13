@@ -157,6 +157,22 @@ module {{register_bank.name}}__register_bank (
 
 
 
+{% if register_bank.has_sw_read_side_effect %}
+  // Software read side-effect tracking
+  {%- filter reindent(1) %}
+  {%- filter autoformat_signal_definitions %}
+    logic        sw_read_side_effect_valid;
+    logic [31:0] sw_read_side_effect_address;
+  {%- endfilter %} {#- autoformat_signal_definitions #}
+  {%- endfilter %} {#- reindent #}
+{% endif %}
+
+
+
+  {§ spacing 3 §}
+
+
+
   // Reset and write
   always_ff @(posedge control__pclock or negedge control__preset_n) begin
 
@@ -179,6 +195,9 @@ module {{register_bank.name}}__register_bank (
         {%- endfor %}
       {%- endfilter %} {#- reindent #}
       {%- endfilter %} {#- align #}
+      {%- if register_bank.has_sw_read_side_effect %}
+      sw_read_side_effect_valid <= 0;
+      {%- endif %}
     end
 
     {§ spacing 1 §}
@@ -354,6 +373,48 @@ module {{register_bank.name}}__register_bank (
     {%- endfilter %} {#- align #}
 
     {§ spacing 1 §}
+
+{% if register_bank.has_sw_read_side_effect %}
+    // Software read side-effect capture and apply
+    if (control__psel && control__penable && !control__pwrite) begin
+      sw_read_side_effect_address <= control__paddr;
+      sw_read_side_effect_valid   <= 1;
+    end else if (sw_read_side_effect_valid) begin
+      sw_read_side_effect_valid   <= 0;
+      case (sw_read_side_effect_address)
+        {%- filter align %}
+        {%- filter reindent(4) %}
+          {%- for register in register_bank.registers %}
+            {%- if register.has_sw_read_side_effect %}
+              {%- if register.fields %}
+                32'h{{register.address|hexadecimal}}: begin
+                  {%- for field in register.fields -%}
+                    {%- if field.sw_read_behavior != SoftwareReadBehavior.NORMAL %}
+                      {%- if field.sw_read_behavior == SoftwareReadBehavior.READ_CLEARS -%}
+                        § register__{{register.hierarchical_name}}__{{field.name}}__storage § <= { {{field.width}} {1'b0} };
+                      {% elif field.sw_read_behavior == SoftwareReadBehavior.READ_SETS -%}
+                        § register__{{register.hierarchical_name}}__{{field.name}}__storage § <= { {{field.width}} {1'b1} };
+                      {% elif field.sw_read_behavior == SoftwareReadBehavior.READ_RESETS -%}
+                        § register__{{register.hierarchical_name}}__{{field.name}}__storage § <= {{field.width}}'h{{field.reset_value|hexadecimal}};
+                      {%- endif -%}
+                    {%- endif -%}
+                  {%- endfor %} end
+              {%- else %} {#- fields #}
+                {%- if register.sw_read_behavior == SoftwareReadBehavior.READ_CLEARS %}
+                  32'h{{register.address|hexadecimal}}: § register__{{register.hierarchical_name}}__storage § <= { {{register.width}} {1'b0} };
+                {%- elif register.sw_read_behavior == SoftwareReadBehavior.READ_SETS %}
+                  32'h{{register.address|hexadecimal}}: § register__{{register.hierarchical_name}}__storage § <= { {{register.width}} {1'b1} };
+                {%- elif register.sw_read_behavior == SoftwareReadBehavior.READ_RESETS %}
+                  32'h{{register.address|hexadecimal}}: § register__{{register.hierarchical_name}}__storage § <= {{register.width}}'h{{register.reset_value|hexadecimal}};
+                {%- endif %}
+              {%- endif %} {#- fields #}
+            {%- endif %} {#- has_sw_read_side_effect #}
+          {%- endfor %} {#- registers #}
+        {%- endfilter %} {#- reindent #}
+        {%- endfilter %} {#- align #}
+      endcase
+    end
+{%- endif %}
 
   end
 

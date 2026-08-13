@@ -27,6 +27,9 @@ class RegisterBank(ComponentContainer):
     self.registers = []
     self.files     = []
 
+    # Flag set during elaboration if any register or field has non-NORMAL software read behavior
+    self.has_sw_read_side_effect = False
+
   # Import the methods from their dedicated files
   elaborate = elaborate
   generate  = generate

@@ -201,6 +201,21 @@ def _cleanup_access_options(component):
 
 
 
+def _elaborate_sw_read_side_effects(bank):
+  """Flag non-NORMAL software read behaviors and set flags on register bank and registers."""
+  for register in bank.registers:
+    if register.fields:
+      for field in register.fields:
+        if field.sw_read_behavior != SoftwareReadBehavior.NORMAL:
+          register.has_sw_read_side_effect = True
+          bank.has_sw_read_side_effect = True
+          break
+    elif register.sw_read_behavior != SoftwareReadBehavior.NORMAL:
+      register.has_sw_read_side_effect = True
+      bank.has_sw_read_side_effect = True
+
+
+
 def _elaborate_access_policies(container):
   """Compute software and hardware access policies for registers and fields."""
   for register in container.registers:
@@ -415,6 +430,9 @@ def elaborate(self):
 
   # Access policy between fields and registers
   _elaborate_access_policies(self)
+
+  # Flag software read side effect behaviors
+  _elaborate_sw_read_side_effects(self)
 
   # Compute which register files are empty in the firmware struct
   _elaborate_sw_struct_accessibility(self)

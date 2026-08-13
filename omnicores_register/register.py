@@ -59,6 +59,9 @@ class Register(AddressableComponent, AccessibleComponent):
     # Padding after the last field to fill the register width
     self.sw_struct_fields_padding = 0
 
+    # Set during elaboration if any field has non-NORMAL SW read behavior
+    self.has_sw_read_side_effect = False
+
   def as_array(self, length:int, stride:int=None):
     """Create a ComponentArray for replication of this register."""
     from omnicores_register.component_array import ComponentArray
