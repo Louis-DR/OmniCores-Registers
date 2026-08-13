@@ -201,18 +201,61 @@ def _cleanup_access_options(component):
 
 
 
+def _resolve_sw_read_side_effect_init(component):
+  """Return the initialization mechanism key used by the testbench to set a known value on a component before testing its software read side-effect."""
+  if component.sw_read_behavior == SoftwareReadBehavior.READ_CLEARS:
+    # Need to set all bits to 1
+    if component.is_software_writable() and component.sw_write_behavior == SoftwareWriteBehavior.NORMAL:
+      return 'sw_normal_write'
+    if component.is_hardware_writable() and component.has_hw_write_option(HardwareWriteOptions.ENABLE):
+      return 'hw_enable_write'
+    if component.is_software_writable() and component.sw_write_behavior == SoftwareWriteBehavior.WRITE_ONE_SETS:
+      return 'sw_write_one_sets'
+    if component.is_software_writable() and component.sw_write_behavior == SoftwareWriteBehavior.WRITE_ZERO_SETS:
+      return 'sw_write_zero_sets'
+    if component.is_hardware_writable() and component.has_hw_write_option(HardwareWriteOptions.SET_ALL):
+      return 'hw_set_all'
+    if component.is_hardware_writable() and component.has_hw_write_option(HardwareWriteOptions.SET_MASK):
+      return 'hw_set_mask'
+  elif component.sw_read_behavior == SoftwareReadBehavior.READ_SETS:
+    # Need to clear all bits to 0
+    if component.is_software_writable() and component.sw_write_behavior == SoftwareWriteBehavior.NORMAL:
+      return 'sw_normal_write'
+    if component.is_hardware_writable() and component.has_hw_write_option(HardwareWriteOptions.ENABLE):
+      return 'hw_enable_write'
+    if component.is_software_writable() and component.sw_write_behavior == SoftwareWriteBehavior.WRITE_ONE_CLEARS:
+      return 'sw_write_one_clears'
+    if component.is_software_writable() and component.sw_write_behavior == SoftwareWriteBehavior.WRITE_ZERO_CLEARS:
+      return 'sw_write_zero_clears'
+    if component.is_hardware_writable() and component.has_hw_write_option(HardwareWriteOptions.CLEAR_ALL):
+      return 'hw_clear_all'
+    if component.is_hardware_writable() and component.has_hw_write_option(HardwareWriteOptions.CLEAR_MASK):
+      return 'hw_clear_mask'
+  elif component.sw_read_behavior == SoftwareReadBehavior.READ_RESETS:
+    # Need to set a value different from the reset value
+    if component.reset_value is None:
+      return None
+    if component.is_software_writable() and component.sw_write_behavior == SoftwareWriteBehavior.NORMAL:
+      return 'sw_normal_write'
+    if component.is_hardware_writable() and component.has_hw_write_option(HardwareWriteOptions.ENABLE):
+      return 'hw_enable_write'
+  return None
+
+
+
 def _elaborate_sw_read_side_effects(bank):
-  """Flag non-NORMAL software read behaviors and set flags on register bank and registers."""
+  """Flag non-NORMAL software read behaviors and resolve the testbench initialization mechanism."""
   for register in bank.registers:
     if register.fields:
       for field in register.fields:
         if field.sw_read_behavior != SoftwareReadBehavior.NORMAL:
           register.has_sw_read_side_effect = True
           bank.has_sw_read_side_effect = True
-          break
+          field.sw_read_side_effect_init = _resolve_sw_read_side_effect_init(field)
     elif register.sw_read_behavior != SoftwareReadBehavior.NORMAL:
       register.has_sw_read_side_effect = True
       bank.has_sw_read_side_effect = True
+      register.sw_read_side_effect_init = _resolve_sw_read_side_effect_init(register)
 
 
 

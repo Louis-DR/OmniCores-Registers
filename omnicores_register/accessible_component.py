@@ -41,6 +41,9 @@ class AccessibleComponent:
     self.sw_write_behavior = sw_write_behavior
     self.sw_read_behavior  = sw_read_behavior
 
+    # Initialization mechanism key resolved during elaboration for the testbench of non-NORMAL software read behaviors (None when unused)
+    self.sw_read_side_effect_init = None
+
   def is_software_readable(self) -> bool:
     return self.software_access in [SoftwareAccessType.READ_ONLY, SoftwareAccessType.READ_WRITE]
 

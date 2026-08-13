@@ -423,18 +423,18 @@ module {{register_bank.name}}__register_bank__testbench;
     {%- if field.reset_value is not none and not (field.has_hw_write_option(HardwareWriteOptions.CONTINUOUS) and not field.has_hw_write_option(HardwareWriteOptions.ENABLE)) %}
     {§ spacing 1 §}
     expected_data = register__{{register.hierarchical_name}}__{{field.name}}__reset_value;
-    {%- if field.is_software_readable() %}
+    {%- if field.is_software_readable() and field.sw_read_behavior == SoftwareReadBehavior.NORMAL %}
     register_read(register__{{register.hierarchical_name}}__address);
     field_sw_read_data = (register_sw_read_data & register__{{register.hierarchical_name}}__{{field.name}}__mask) >> register__{{register.hierarchical_name}}__{{field.name}}__offset;
     assert(field_sw_read_data === expected_data)
       else $error("[%t] Incorrect reset value read by software access for register field '{{register.hierarchical_name}}.{{field.name}}'. Expected '%0h' but got '%0h' instead.", $realtime, expected_data, field_sw_read_data);
     {%- endif %} {#- field.is_software_readable #}
-    {%- if field.has_hw_read_option(HardwareReadOptions.DATA) %}
+    {%- if field.has_hw_read_option(HardwareReadOptions.DATA) and field.sw_read_behavior == SoftwareReadBehavior.NORMAL %}
     field_hw_read_data = register__{{register.hierarchical_name}}__{{field.name}};
     assert(field_hw_read_data === expected_data)
       else $error("[%t] Incorrect reset value read by hardware access for register field '{{register.hierarchical_name}}.{{field.name}}'. Expected '%0h' but got '%0h' instead.", $realtime, expected_data, field_hw_read_data);
     {%- endif %} {#- field.is_hardware_readable #}
-    {%- if field.is_software_readable() and field.has_hw_read_option(HardwareReadOptions.DATA) %}
+    {%- if field.is_software_readable() and field.has_hw_read_option(HardwareReadOptions.DATA) and field.sw_read_behavior == SoftwareReadBehavior.NORMAL %}
     assert(field_hw_read_data === field_sw_read_data)
       else $error("[%t] Different values read by software and software access for register field '{{register.hierarchical_name}}.{{field.name}}'. Hardware reads '%0h' but software read '%0h'.", $realtime, field_hw_read_data, field_sw_read_data);
     {%- endif %} {#- field.is_software_readable and field.is_hardware_readable #}
@@ -443,17 +443,17 @@ module {{register_bank.name}}__register_bank__testbench;
     {%- if register.reset_value is not none and not (register.has_hw_write_option(HardwareWriteOptions.CONTINUOUS) and not register.has_hw_write_option(HardwareWriteOptions.ENABLE)) %}
     {§ spacing 1 §}
     expected_data = register__{{register.hierarchical_name}}__reset_value;
-    {%- if register.is_software_readable() %}
+    {%- if register.is_software_readable() and register.sw_read_behavior == SoftwareReadBehavior.NORMAL %}
     register_read(register__{{register.hierarchical_name}}__address);
     assert(register_sw_read_data === expected_data)
       else $error("[%t] Incorrect reset value read by software access for register '{{register.hierarchical_name}}'. Expected '%0h' but got '%0h' instead.", $realtime, expected_data, register_sw_read_data);
     {%- endif %} {#- register.is_software_readable #}
-    {%- if register.has_hw_read_option(HardwareReadOptions.DATA) %}
+    {%- if register.has_hw_read_option(HardwareReadOptions.DATA) and register.sw_read_behavior == SoftwareReadBehavior.NORMAL %}
     register_hw_read_data = register__{{register.hierarchical_name}};
     assert(register_hw_read_data === expected_data)
       else $error("[%t] Incorrect reset value read by hardware access for register '{{register.hierarchical_name}}'. Expected '%0h' but got '%0h' instead.", $realtime, expected_data, register_hw_read_data);
     {%- endif %} {#- register.is_hardware_readable #}
-    {%- if register.is_software_readable() and register.has_hw_read_option(HardwareReadOptions.DATA) %}
+    {%- if register.is_software_readable() and register.has_hw_read_option(HardwareReadOptions.DATA) and register.sw_read_behavior == SoftwareReadBehavior.NORMAL %}
     assert(register_hw_read_data === register_sw_read_data)
       else $error("[%t] Different values read by software and software access for register '{{register.hierarchical_name}}'. Hardware reads '%0h' but software read '%0h'.", $realtime, register_hw_read_data, register_sw_read_data);
     {%- endif %} {#- register.is_software_readable and register.is_hardware_readable #}
@@ -482,12 +482,12 @@ module {{register_bank.name}}__register_bank__testbench;
     assert(field_sw_read_data === expected_data)
       else $error("[%t] Incorrect value read by software access after writing all ones by software for register field '{{register.hierarchical_name}}.{{field.name}}'. Expected '%0h' but got '%0h' instead.", $realtime, expected_data, field_sw_read_data);
     {%- endif %} {#- field.is_software_readable #}
-    {%- if field.has_hw_read_option(HardwareReadOptions.DATA) %}
+    {%- if field.has_hw_read_option(HardwareReadOptions.DATA) and field.sw_read_behavior == SoftwareReadBehavior.NORMAL %}
     field_hw_read_data = register__{{register.hierarchical_name}}__{{field.name}};
     assert(field_hw_read_data === expected_data)
       else $error("[%t] Incorrect value read by hardware access after writing all ones by software for register field '{{register.hierarchical_name}}.{{field.name}}'. Expected '%0h' but got '%0h' instead.", $realtime, expected_data, field_hw_read_data);
     {%- endif %} {#- field.is_hardware_readable #}
-    {%- if field.is_software_readable() and field.has_hw_read_option(HardwareReadOptions.DATA) %}
+    {%- if field.is_software_readable() and field.has_hw_read_option(HardwareReadOptions.DATA) and field.sw_read_behavior == SoftwareReadBehavior.NORMAL %}
     assert(field_hw_read_data === field_sw_read_data)
       else $error("[%t] Different values read by software and software access for register field '{{register.hierarchical_name}}.{{field.name}}'. Hardware reads '%0h' but software read '%0h'.", $realtime, field_hw_read_data, field_sw_read_data);
     {%- endif %} {#- field.is_software_readable and field.is_hardware_readable #}
@@ -503,12 +503,12 @@ module {{register_bank.name}}__register_bank__testbench;
     assert(register_sw_read_data === expected_data)
       else $error("[%t] Incorrect value read by software access after writing all ones by software for register '{{register.hierarchical_name}}'. Expected '%0h' but got '%0h' instead.", $realtime, expected_data, register_sw_read_data);
     {%- endif %} {#- register.is_software_readable #}
-    {%- if register.has_hw_read_option(HardwareReadOptions.DATA) %}
+    {%- if register.has_hw_read_option(HardwareReadOptions.DATA) and register.sw_read_behavior == SoftwareReadBehavior.NORMAL %}
     register_hw_read_data = register__{{register.hierarchical_name}};
     assert(register_hw_read_data === expected_data)
       else $error("[%t] Incorrect value read by hardware access after writing all ones by software for register '{{register.hierarchical_name}}'. Expected '%0h' but got '%0h' instead.", $realtime, expected_data, register_hw_read_data);
     {%- endif %} {#- register.is_hardware_readable #}
-    {%- if register.is_software_readable() and register.has_hw_read_option(HardwareReadOptions.DATA) %}
+    {%- if register.is_software_readable() and register.has_hw_read_option(HardwareReadOptions.DATA) and register.sw_read_behavior == SoftwareReadBehavior.NORMAL %}
     assert(register_hw_read_data === register_sw_read_data)
       else $error("[%t] Different values read by software and software access for register '{{register.hierarchical_name}}'. Hardware reads '%0h' but software read '%0h'.", $realtime, register_hw_read_data, register_sw_read_data);
     {%- endif %} {#- register.is_software_readable and register.is_hardware_readable #}
@@ -537,12 +537,12 @@ module {{register_bank.name}}__register_bank__testbench;
     assert(field_sw_read_data === expected_data)
       else $error("[%t] Incorrect value read by software access after writing all zeros by software for register field '{{register.hierarchical_name}}.{{field.name}}'. Expected '%0h' but got '%0h' instead.", $realtime, expected_data, field_sw_read_data);
     {%- endif %} {#- field.is_software_readable #}
-    {%- if field.has_hw_read_option(HardwareReadOptions.DATA) %}
+    {%- if field.has_hw_read_option(HardwareReadOptions.DATA) and field.sw_read_behavior == SoftwareReadBehavior.NORMAL %}
     field_hw_read_data = register__{{register.hierarchical_name}}__{{field.name}};
     assert(field_hw_read_data === expected_data)
       else $error("[%t] Incorrect value read by hardware access after writing all zeros by software for register field '{{register.hierarchical_name}}.{{field.name}}'. Expected '%0h' but got '%0h' instead.", $realtime, expected_data, field_hw_read_data);
     {%- endif %} {#- field.is_hardware_readable #}
-    {%- if field.is_software_readable() and field.has_hw_read_option(HardwareReadOptions.DATA) %}
+    {%- if field.is_software_readable() and field.has_hw_read_option(HardwareReadOptions.DATA) and field.sw_read_behavior == SoftwareReadBehavior.NORMAL %}
     assert(field_hw_read_data === field_sw_read_data)
       else $error("[%t] Different values read by software and software access for register field '{{register.hierarchical_name}}.{{field.name}}'. Hardware reads '%0h' but software read '%0h'.", $realtime, field_hw_read_data, field_sw_read_data);
     {%- endif %} {#- field.is_software_readable and field.is_hardware_readable #}
@@ -558,12 +558,12 @@ module {{register_bank.name}}__register_bank__testbench;
     assert(register_sw_read_data === expected_data)
       else $error("[%t] Incorrect value read by software access after writing all zeros by software for register '{{register.hierarchical_name}}'. Expected '%0h' but got '%0h' instead.", $realtime, expected_data, register_sw_read_data);
     {%- endif %} {#- register.is_software_readable #}
-    {%- if register.has_hw_read_option(HardwareReadOptions.DATA) %}
+    {%- if register.has_hw_read_option(HardwareReadOptions.DATA) and register.sw_read_behavior == SoftwareReadBehavior.NORMAL %}
     register_hw_read_data = register__{{register.hierarchical_name}};
     assert(register_hw_read_data === expected_data)
       else $error("[%t] Incorrect value read by hardware access after writing all zeros by software for register '{{register.hierarchical_name}}'. Expected '%0h' but got '%0h' instead.", $realtime, expected_data, register_hw_read_data);
     {%- endif %} {#- register.is_hardware_readable #}
-    {%- if register.is_software_readable() and register.has_hw_read_option(HardwareReadOptions.DATA) %}
+    {%- if register.is_software_readable() and register.has_hw_read_option(HardwareReadOptions.DATA) and register.sw_read_behavior == SoftwareReadBehavior.NORMAL %}
     assert(register_hw_read_data === register_sw_read_data)
       else $error("[%t] Different values read by software and software access for register '{{register.hierarchical_name}}'. Hardware reads '%0h' but software read '%0h'.", $realtime, register_hw_read_data, register_sw_read_data);
     {%- endif %} {#- register.is_software_readable and register.is_hardware_readable #}
@@ -596,12 +596,12 @@ module {{register_bank.name}}__register_bank__testbench;
     assert(field_sw_read_data === expected_data)
       else $error("[%t] Incorrect value read by software access after writing all ones by hardware for register field '{{register.hierarchical_name}}.{{field.name}}'. Expected '%0h' but got '%0h' instead.", $realtime, expected_data, field_sw_read_data);
     {%- endif %} {#- field.is_software_readable #}
-    {%- if field.has_hw_read_option(HardwareReadOptions.DATA) %}
+    {%- if field.has_hw_read_option(HardwareReadOptions.DATA) and field.sw_read_behavior == SoftwareReadBehavior.NORMAL %}
     field_hw_read_data = register__{{register.hierarchical_name}}__{{field.name}};
     assert(field_hw_read_data === expected_data)
       else $error("[%t] Incorrect value read by hardware access after writing all ones by hardware for register field '{{register.hierarchical_name}}.{{field.name}}'. Expected '%0h' but got '%0h' instead.", $realtime, expected_data, field_hw_read_data);
     {%- endif %} {#- field.is_hardware_readable #}
-    {%- if field.is_software_readable() and field.has_hw_read_option(HardwareReadOptions.DATA) %}
+    {%- if field.is_software_readable() and field.has_hw_read_option(HardwareReadOptions.DATA) and field.sw_read_behavior == SoftwareReadBehavior.NORMAL %}
     assert(field_hw_read_data === field_sw_read_data)
       else $error("[%t] Different values read by software and software access for register field '{{register.hierarchical_name}}.{{field.name}}'. Hardware reads '%0h' but software read '%0h'.", $realtime, field_hw_read_data, field_sw_read_data);
     {%- endif %} {#- field.is_software_readable and field.is_hardware_readable #}
@@ -621,12 +621,12 @@ module {{register_bank.name}}__register_bank__testbench;
     assert(register_sw_read_data === expected_data)
       else $error("[%t] Incorrect value read by software access after writing all ones by hardware for register '{{register.hierarchical_name}}'. Expected '%0h' but got '%0h' instead.", $realtime, expected_data, register_sw_read_data);
     {%- endif %} {#- register.is_software_readable #}
-    {%- if register.has_hw_read_option(HardwareReadOptions.DATA) %}
+    {%- if register.has_hw_read_option(HardwareReadOptions.DATA) and register.sw_read_behavior == SoftwareReadBehavior.NORMAL %}
     register_hw_read_data = register__{{register.hierarchical_name}};
     assert(register_hw_read_data === expected_data)
       else $error("[%t] Incorrect value read by hardware access after writing all ones by hardware for register '{{register.hierarchical_name}}'. Expected '%0h' but got '%0h' instead.", $realtime, expected_data, register_hw_read_data);
     {%- endif %} {#- register.is_hardware_readable #}
-    {%- if register.is_software_readable() and register.has_hw_read_option(HardwareReadOptions.DATA) %}
+    {%- if register.is_software_readable() and register.has_hw_read_option(HardwareReadOptions.DATA) and register.sw_read_behavior == SoftwareReadBehavior.NORMAL %}
     assert(register_hw_read_data === register_sw_read_data)
       else $error("[%t] Different values read by software and software access for register '{{register.hierarchical_name}}'. Hardware reads '%0h' but software read '%0h'.", $realtime, register_hw_read_data, register_sw_read_data);
     {%- endif %} {#- register.is_software_readable and register.is_hardware_readable #}
@@ -659,12 +659,12 @@ module {{register_bank.name}}__register_bank__testbench;
     assert(field_sw_read_data === expected_data)
       else $error("[%t] Incorrect value read by software access after writing all zeros by hardware for register field '{{register.hierarchical_name}}.{{field.name}}'. Expected '%0h' but got '%0h' instead.", $realtime, expected_data, field_sw_read_data);
     {%- endif %} {#- field.is_software_readable #}
-    {%- if field.has_hw_read_option(HardwareReadOptions.DATA) %}
+    {%- if field.has_hw_read_option(HardwareReadOptions.DATA) and field.sw_read_behavior == SoftwareReadBehavior.NORMAL %}
     field_hw_read_data = register__{{register.hierarchical_name}}__{{field.name}};
     assert(field_hw_read_data === expected_data)
       else $error("[%t] Incorrect value read by hardware access after writing all zeros by hardware for register field '{{register.hierarchical_name}}.{{field.name}}'. Expected '%0h' but got '%0h' instead.", $realtime, expected_data, field_hw_read_data);
     {%- endif %} {#- field.is_hardware_readable #}
-    {%- if field.is_software_readable() and field.has_hw_read_option(HardwareReadOptions.DATA) %}
+    {%- if field.is_software_readable() and field.has_hw_read_option(HardwareReadOptions.DATA) and field.sw_read_behavior == SoftwareReadBehavior.NORMAL %}
     assert(field_hw_read_data === field_sw_read_data)
       else $error("[%t] Different values read by software and software access for register field '{{register.hierarchical_name}}.{{field.name}}'. Hardware reads '%0h' but software read '%0h'.", $realtime, field_hw_read_data, field_sw_read_data);
     {%- endif %} {#- field.is_software_readable and field.is_hardware_readable #}
@@ -684,12 +684,12 @@ module {{register_bank.name}}__register_bank__testbench;
     assert(register_sw_read_data === expected_data)
       else $error("[%t] Incorrect value read by software access after writing all zeros by hardware for register '{{register.hierarchical_name}}'. Expected '%0h' but got '%0h' instead.", $realtime, expected_data, register_sw_read_data);
     {%- endif %} {#- register.is_software_readable #}
-    {%- if register.has_hw_read_option(HardwareReadOptions.DATA) %}
+    {%- if register.has_hw_read_option(HardwareReadOptions.DATA) and register.sw_read_behavior == SoftwareReadBehavior.NORMAL %}
     register_hw_read_data = register__{{register.hierarchical_name}};
     assert(register_hw_read_data === expected_data)
       else $error("[%t] Incorrect value read by hardware access after writing all zeros by hardware for register '{{register.hierarchical_name}}'. Expected '%0h' but got '%0h' instead.", $realtime, expected_data, register_hw_read_data);
     {%- endif %} {#- register.is_hardware_readable #}
-    {%- if register.is_software_readable() and register.has_hw_read_option(HardwareReadOptions.DATA) %}
+    {%- if register.is_software_readable() and register.has_hw_read_option(HardwareReadOptions.DATA) and register.sw_read_behavior == SoftwareReadBehavior.NORMAL %}
     assert(register_hw_read_data === register_sw_read_data)
       else $error("[%t] Different values read by software and software access for register '{{register.hierarchical_name}}'. Hardware reads '%0h' but software read '%0h'.", $realtime, register_hw_read_data, register_sw_read_data);
     {%- endif %} {#- register.is_software_readable and register.is_hardware_readable #}
@@ -718,7 +718,7 @@ module {{register_bank.name}}__register_bank__testbench;
     assert(field_sw_read_data === expected_data)
       else $error("[%t] Incorrect value read after continuous write for register field '{{register.hierarchical_name}}.{{field.name}}'. Expected '%0h' but got '%0h' instead.", $realtime, expected_data, field_sw_read_data);
     {%- endif %} {#- field.is_software_readable #}
-    {%- if field.has_hw_read_option(HardwareReadOptions.DATA) %}
+    {%- if field.has_hw_read_option(HardwareReadOptions.DATA) and field.sw_read_behavior == SoftwareReadBehavior.NORMAL %}
     field_hw_read_data = register__{{register.hierarchical_name}}__{{field.name}};
     assert(field_hw_read_data === expected_data)
       else $error("[%t] Incorrect hardware value after continuous write for register field '{{register.hierarchical_name}}.{{field.name}}'. Expected '%0h' but got '%0h' instead.", $realtime, expected_data, field_hw_read_data);
@@ -736,7 +736,7 @@ module {{register_bank.name}}__register_bank__testbench;
     assert(register_sw_read_data === expected_data)
       else $error("[%t] Incorrect value read after continuous write for register '{{register.hierarchical_name}}'. Expected '%0h' but got '%0h' instead.", $realtime, expected_data, register_sw_read_data);
     {%- endif %} {#- register.is_software_readable #}
-    {%- if register.has_hw_read_option(HardwareReadOptions.DATA) %}
+    {%- if register.has_hw_read_option(HardwareReadOptions.DATA) and register.sw_read_behavior == SoftwareReadBehavior.NORMAL %}
     register_hw_read_data = register__{{register.hierarchical_name}};
     assert(register_hw_read_data === expected_data)
       else $error("[%t] Incorrect hardware value after continuous write for register '{{register.hierarchical_name}}'. Expected '%0h' but got '%0h' instead.", $realtime, expected_data, register_hw_read_data);
@@ -768,7 +768,7 @@ module {{register_bank.name}}__register_bank__testbench;
     assert(field_sw_read_data === expected_data)
       else $error("[%t] Incorrect value after set mask for register field '{{register.hierarchical_name}}.{{field.name}}'. Expected '%0h' but got '%0h' instead.", $realtime, expected_data, field_sw_read_data);
     {%- endif %} {#- field.is_software_readable #}
-    {%- if field.has_hw_read_option(HardwareReadOptions.DATA) %}
+    {%- if field.has_hw_read_option(HardwareReadOptions.DATA) and field.sw_read_behavior == SoftwareReadBehavior.NORMAL %}
     field_hw_read_data = register__{{register.hierarchical_name}}__{{field.name}};
     assert(field_hw_read_data === expected_data)
       else $error("[%t] Incorrect hardware value after set mask for register field '{{register.hierarchical_name}}.{{field.name}}'. Expected '%0h' but got '%0h' instead.", $realtime, expected_data, field_hw_read_data);
@@ -786,7 +786,7 @@ module {{register_bank.name}}__register_bank__testbench;
     assert(register_sw_read_data === expected_data)
       else $error("[%t] Incorrect value after set mask for register '{{register.hierarchical_name}}'. Expected '%0h' but got '%0h' instead.", $realtime, expected_data, register_sw_read_data);
     {%- endif %} {#- register.is_software_readable #}
-    {%- if register.has_hw_read_option(HardwareReadOptions.DATA) %}
+    {%- if register.has_hw_read_option(HardwareReadOptions.DATA) and register.sw_read_behavior == SoftwareReadBehavior.NORMAL %}
     register_hw_read_data = register__{{register.hierarchical_name}};
     assert(register_hw_read_data === expected_data)
       else $error("[%t] Incorrect hardware value after set mask for register '{{register.hierarchical_name}}'. Expected '%0h' but got '%0h' instead.", $realtime, expected_data, register_hw_read_data);
@@ -817,7 +817,7 @@ module {{register_bank.name}}__register_bank__testbench;
     assert(field_sw_read_data === expected_data)
       else $error("[%t] Incorrect value after set all for register field '{{register.hierarchical_name}}.{{field.name}}'. Expected '%0h' but got '%0h' instead.", $realtime, expected_data, field_sw_read_data);
     {%- endif %} {#- field.is_software_readable #}
-    {%- if field.has_hw_read_option(HardwareReadOptions.DATA) %}
+    {%- if field.has_hw_read_option(HardwareReadOptions.DATA) and field.sw_read_behavior == SoftwareReadBehavior.NORMAL %}
     field_hw_read_data = register__{{register.hierarchical_name}}__{{field.name}};
     assert(field_hw_read_data === expected_data)
       else $error("[%t] Incorrect hardware value after set all for register field '{{register.hierarchical_name}}.{{field.name}}'. Expected '%0h' but got '%0h' instead.", $realtime, expected_data, field_hw_read_data);
@@ -835,7 +835,7 @@ module {{register_bank.name}}__register_bank__testbench;
     assert(register_sw_read_data === expected_data)
       else $error("[%t] Incorrect value after set all for register '{{register.hierarchical_name}}'. Expected '%0h' but got '%0h' instead.", $realtime, expected_data, register_sw_read_data);
     {%- endif %} {#- register.is_software_readable #}
-    {%- if register.has_hw_read_option(HardwareReadOptions.DATA) %}
+    {%- if register.has_hw_read_option(HardwareReadOptions.DATA) and register.sw_read_behavior == SoftwareReadBehavior.NORMAL %}
     register_hw_read_data = register__{{register.hierarchical_name}};
     assert(register_hw_read_data === expected_data)
       else $error("[%t] Incorrect hardware value after set all for register '{{register.hierarchical_name}}'. Expected '%0h' but got '%0h' instead.", $realtime, expected_data, register_hw_read_data);
@@ -866,7 +866,7 @@ module {{register_bank.name}}__register_bank__testbench;
     assert(field_sw_read_data === expected_data)
       else $error("[%t] Incorrect value after clear mask for register field '{{register.hierarchical_name}}.{{field.name}}'. Expected '%0h' but got '%0h' instead.", $realtime, expected_data, field_sw_read_data);
     {%- endif %} {#- field.is_software_readable #}
-    {%- if field.has_hw_read_option(HardwareReadOptions.DATA) %}
+    {%- if field.has_hw_read_option(HardwareReadOptions.DATA) and field.sw_read_behavior == SoftwareReadBehavior.NORMAL %}
     field_hw_read_data = register__{{register.hierarchical_name}}__{{field.name}};
     assert(field_hw_read_data === expected_data)
       else $error("[%t] Incorrect hardware value after clear mask for register field '{{register.hierarchical_name}}.{{field.name}}'. Expected '%0h' but got '%0h' instead.", $realtime, expected_data, field_hw_read_data);
@@ -884,7 +884,7 @@ module {{register_bank.name}}__register_bank__testbench;
     assert(register_sw_read_data === expected_data)
       else $error("[%t] Incorrect value after clear mask for register '{{register.hierarchical_name}}'. Expected '%0h' but got '%0h' instead.", $realtime, expected_data, register_sw_read_data);
     {%- endif %} {#- register.is_software_readable #}
-    {%- if register.has_hw_read_option(HardwareReadOptions.DATA) %}
+    {%- if register.has_hw_read_option(HardwareReadOptions.DATA) and register.sw_read_behavior == SoftwareReadBehavior.NORMAL %}
     register_hw_read_data = register__{{register.hierarchical_name}};
     assert(register_hw_read_data === expected_data)
       else $error("[%t] Incorrect hardware value after clear mask for register '{{register.hierarchical_name}}'. Expected '%0h' but got '%0h' instead.", $realtime, expected_data, register_hw_read_data);
@@ -909,13 +909,13 @@ module {{register_bank.name}}__register_bank__testbench;
     @(negedge control__pclock);
     register__{{register.hierarchical_name}}__{{field.name}}__hw_clear_all = 0;
     expected_data = { {{field.width}} {1'b0} };
-    {%- if field.is_software_readable() %}
+    {%- if field.is_software_readable() and field.sw_read_behavior == SoftwareReadBehavior.NORMAL %}
     register_read (register__{{register.hierarchical_name}}__address);
     field_sw_read_data = (register_sw_read_data & register__{{register.hierarchical_name}}__{{field.name}}__mask) >> register__{{register.hierarchical_name}}__{{field.name}}__offset;
     assert(field_sw_read_data === expected_data)
       else $error("[%t] Incorrect value after clear all for register field '{{register.hierarchical_name}}.{{field.name}}'. Expected '%0h' but got '%0h' instead.", $realtime, expected_data, field_sw_read_data);
     {%- endif %} {#- field.is_software_readable #}
-    {%- if field.has_hw_read_option(HardwareReadOptions.DATA) %}
+    {%- if field.has_hw_read_option(HardwareReadOptions.DATA) and field.sw_read_behavior == SoftwareReadBehavior.NORMAL %}
     field_hw_read_data = register__{{register.hierarchical_name}}__{{field.name}};
     assert(field_hw_read_data === expected_data)
       else $error("[%t] Incorrect hardware value after clear all for register field '{{register.hierarchical_name}}.{{field.name}}'. Expected '%0h' but got '%0h' instead.", $realtime, expected_data, field_hw_read_data);
@@ -928,12 +928,12 @@ module {{register_bank.name}}__register_bank__testbench;
     @(negedge control__pclock);
     register__{{register.hierarchical_name}}__hw_clear_all = 0;
     expected_data = { {{register.width}} {1'b0} };
-    {%- if register.is_software_readable() %}
+    {%- if register.is_software_readable() and register.sw_read_behavior == SoftwareReadBehavior.NORMAL %}
     register_read (register__{{register.hierarchical_name}}__address);
     assert(register_sw_read_data === expected_data)
       else $error("[%t] Incorrect value after clear all for register '{{register.hierarchical_name}}'. Expected '%0h' but got '%0h' instead.", $realtime, expected_data, register_sw_read_data);
     {%- endif %} {#- register.is_software_readable #}
-    {%- if register.has_hw_read_option(HardwareReadOptions.DATA) %}
+    {%- if register.has_hw_read_option(HardwareReadOptions.DATA) and register.sw_read_behavior == SoftwareReadBehavior.NORMAL %}
     register_hw_read_data = register__{{register.hierarchical_name}};
     assert(register_hw_read_data === expected_data)
       else $error("[%t] Incorrect hardware value after clear all for register '{{register.hierarchical_name}}'. Expected '%0h' but got '%0h' instead.", $realtime, expected_data, register_hw_read_data);
@@ -958,13 +958,13 @@ module {{register_bank.name}}__register_bank__testbench;
     register__{{register.hierarchical_name}}__{{field.name}}__hw_reset = 1;
     @(negedge control__pclock);
     register__{{register.hierarchical_name}}__{{field.name}}__hw_reset = 0;
-    {%- if field.is_software_readable() %}
+    {%- if field.is_software_readable() and field.sw_read_behavior == SoftwareReadBehavior.NORMAL %}
     register_read (register__{{register.hierarchical_name}}__address);
     field_sw_read_data = (register_sw_read_data & register__{{register.hierarchical_name}}__{{field.name}}__mask) >> register__{{register.hierarchical_name}}__{{field.name}}__offset;
     assert(field_sw_read_data === expected_data)
       else $error("[%t] Incorrect value after hw reset for register field '{{register.hierarchical_name}}.{{field.name}}'. Expected '%0h' but got '%0h' instead.", $realtime, expected_data, field_sw_read_data);
     {%- endif %} {#- field.is_software_readable #}
-    {%- if field.has_hw_read_option(HardwareReadOptions.DATA) %}
+    {%- if field.has_hw_read_option(HardwareReadOptions.DATA) and field.sw_read_behavior == SoftwareReadBehavior.NORMAL %}
     field_hw_read_data = register__{{register.hierarchical_name}}__{{field.name}};
     assert(field_hw_read_data === expected_data)
       else $error("[%t] Incorrect hardware value after hw reset for register field '{{register.hierarchical_name}}.{{field.name}}'. Expected '%0h' but got '%0h' instead.", $realtime, expected_data, field_hw_read_data);
@@ -977,12 +977,12 @@ module {{register_bank.name}}__register_bank__testbench;
     register__{{register.hierarchical_name}}__hw_reset = 1;
     @(negedge control__pclock);
     register__{{register.hierarchical_name}}__hw_reset = 0;
-    {%- if register.is_software_readable() %}
+    {%- if register.is_software_readable() and register.sw_read_behavior == SoftwareReadBehavior.NORMAL %}
     register_read (register__{{register.hierarchical_name}}__address);
     assert(register_sw_read_data === expected_data)
       else $error("[%t] Incorrect value after hw reset for register '{{register.hierarchical_name}}'. Expected '%0h' but got '%0h' instead.", $realtime, expected_data, register_sw_read_data);
     {%- endif %} {#- register.is_software_readable #}
-    {%- if register.has_hw_read_option(HardwareReadOptions.DATA) %}
+    {%- if register.has_hw_read_option(HardwareReadOptions.DATA) and register.sw_read_behavior == SoftwareReadBehavior.NORMAL %}
     register_hw_read_data = register__{{register.hierarchical_name}};
     assert(register_hw_read_data === expected_data)
       else $error("[%t] Incorrect hardware value after hw reset for register '{{register.hierarchical_name}}'. Expected '%0h' but got '%0h' instead.", $realtime, expected_data, register_hw_read_data);
@@ -1007,13 +1007,13 @@ module {{register_bank.name}}__register_bank__testbench;
     register__{{register.hierarchical_name}}__{{field.name}}__hw_increment = 1;
     @(negedge control__pclock);
     register__{{register.hierarchical_name}}__{{field.name}}__hw_increment = 0;
-    {%- if field.is_software_readable() %}
+    {%- if field.is_software_readable() and field.sw_read_behavior == SoftwareReadBehavior.NORMAL %}
     register_read (register__{{register.hierarchical_name}}__address);
     field_sw_read_data = (register_sw_read_data & register__{{register.hierarchical_name}}__{{field.name}}__mask) >> register__{{register.hierarchical_name}}__{{field.name}}__offset;
     assert(field_sw_read_data === expected_data)
       else $error("[%t] Incorrect value after increment for register field '{{register.hierarchical_name}}.{{field.name}}'. Expected '%0h' but got '%0h' instead.", $realtime, expected_data, field_sw_read_data);
     {%- endif %} {#- field.is_software_readable #}
-    {%- if field.has_hw_read_option(HardwareReadOptions.DATA) %}
+    {%- if field.has_hw_read_option(HardwareReadOptions.DATA) and field.sw_read_behavior == SoftwareReadBehavior.NORMAL %}
     field_hw_read_data = register__{{register.hierarchical_name}}__{{field.name}};
     assert(field_hw_read_data === expected_data)
       else $error("[%t] Incorrect hardware value after increment for register field '{{register.hierarchical_name}}.{{field.name}}'. Expected '%0h' but got '%0h' instead.", $realtime, expected_data, field_hw_read_data);
@@ -1026,12 +1026,12 @@ module {{register_bank.name}}__register_bank__testbench;
     register__{{register.hierarchical_name}}__hw_increment = 1;
     @(negedge control__pclock);
     register__{{register.hierarchical_name}}__hw_increment = 0;
-    {%- if register.is_software_readable() %}
+    {%- if register.is_software_readable() and register.sw_read_behavior == SoftwareReadBehavior.NORMAL %}
     register_read (register__{{register.hierarchical_name}}__address);
     assert(register_sw_read_data === expected_data)
       else $error("[%t] Incorrect value after increment for register '{{register.hierarchical_name}}'. Expected '%0h' but got '%0h' instead.", $realtime, expected_data, register_sw_read_data);
     {%- endif %} {#- register.is_software_readable #}
-    {%- if register.has_hw_read_option(HardwareReadOptions.DATA) %}
+    {%- if register.has_hw_read_option(HardwareReadOptions.DATA) and register.sw_read_behavior == SoftwareReadBehavior.NORMAL %}
     register_hw_read_data = register__{{register.hierarchical_name}};
     assert(register_hw_read_data === expected_data)
       else $error("[%t] Incorrect hardware value after increment for register '{{register.hierarchical_name}}'. Expected '%0h' but got '%0h' instead.", $realtime, expected_data, register_hw_read_data);
@@ -1056,13 +1056,13 @@ module {{register_bank.name}}__register_bank__testbench;
     register__{{register.hierarchical_name}}__{{field.name}}__hw_decrement = 1;
     @(negedge control__pclock);
     register__{{register.hierarchical_name}}__{{field.name}}__hw_decrement = 0;
-    {%- if field.is_software_readable() %}
+    {%- if field.is_software_readable() and field.sw_read_behavior == SoftwareReadBehavior.NORMAL %}
     register_read (register__{{register.hierarchical_name}}__address);
     field_sw_read_data = (register_sw_read_data & register__{{register.hierarchical_name}}__{{field.name}}__mask) >> register__{{register.hierarchical_name}}__{{field.name}}__offset;
     assert(field_sw_read_data === expected_data)
       else $error("[%t] Incorrect value after decrement for register field '{{register.hierarchical_name}}.{{field.name}}'. Expected '%0h' but got '%0h' instead.", $realtime, expected_data, field_sw_read_data);
     {%- endif %} {#- field.is_software_readable #}
-    {%- if field.has_hw_read_option(HardwareReadOptions.DATA) %}
+    {%- if field.has_hw_read_option(HardwareReadOptions.DATA) and field.sw_read_behavior == SoftwareReadBehavior.NORMAL %}
     field_hw_read_data = register__{{register.hierarchical_name}}__{{field.name}};
     assert(field_hw_read_data === expected_data)
       else $error("[%t] Incorrect hardware value after decrement for register field '{{register.hierarchical_name}}.{{field.name}}'. Expected '%0h' but got '%0h' instead.", $realtime, expected_data, field_hw_read_data);
@@ -1075,12 +1075,12 @@ module {{register_bank.name}}__register_bank__testbench;
     register__{{register.hierarchical_name}}__hw_decrement = 1;
     @(negedge control__pclock);
     register__{{register.hierarchical_name}}__hw_decrement = 0;
-    {%- if register.is_software_readable() %}
+    {%- if register.is_software_readable() and register.sw_read_behavior == SoftwareReadBehavior.NORMAL %}
     register_read (register__{{register.hierarchical_name}}__address);
     assert(register_sw_read_data === expected_data)
       else $error("[%t] Incorrect value after decrement for register '{{register.hierarchical_name}}'. Expected '%0h' but got '%0h' instead.", $realtime, expected_data, register_sw_read_data);
     {%- endif %} {#- register.is_software_readable #}
-    {%- if register.has_hw_read_option(HardwareReadOptions.DATA) %}
+    {%- if register.has_hw_read_option(HardwareReadOptions.DATA) and register.sw_read_behavior == SoftwareReadBehavior.NORMAL %}
     register_hw_read_data = register__{{register.hierarchical_name}};
     assert(register_hw_read_data === expected_data)
       else $error("[%t] Incorrect hardware value after decrement for register '{{register.hierarchical_name}}'. Expected '%0h' but got '%0h' instead.", $realtime, expected_data, register_hw_read_data);
@@ -1150,10 +1150,9 @@ module {{register_bank.name}}__register_bank__testbench;
     {%- if field.is_software_writable() and field.sw_write_behavior != SoftwareWriteBehavior.NORMAL %}
     {%- if field.is_hardware_writable() and field.has_hw_write_option(HardwareWriteOptions.ENABLE) %}
     {§ spacing 1 §}
-    // '{{register.hierarchical_name}}.{{field.name}}' : {{field.sw_write_behavior|string}}
     {%- if field.sw_write_behavior == SoftwareWriteBehavior.WRITE_ONE_SETS %}
     register__{{register.hierarchical_name}}__{{field.name}}__hw_write_enable = 1;
-    register__{{register.hierarchical_name}}__{{field.name}}__hw_write_data = 0;
+    register__{{register.hierarchical_name}}__{{field.name}}__hw_write_data   = { {{field.width}} {1'b1} };
     @(negedge control__pclock);
     register__{{register.hierarchical_name}}__{{field.name}}__hw_write_enable = 0;
     expected_data = {{field.width}}'d1;
@@ -1165,7 +1164,7 @@ module {{register_bank.name}}__register_bank__testbench;
       else $error("[%t] Incorrect value after Write-One-Sets for register field '{{register.hierarchical_name}}.{{field.name}}'. Expected '%0h' but got '%0h' instead.", $realtime, expected_data, field_sw_read_data);
     {%- elif field.sw_write_behavior == SoftwareWriteBehavior.WRITE_ONE_CLEARS %}
     register__{{register.hierarchical_name}}__{{field.name}}__hw_write_enable = 1;
-    register__{{register.hierarchical_name}}__{{field.name}}__hw_write_data = ~0;
+    register__{{register.hierarchical_name}}__{{field.name}}__hw_write_data   = { {{field.width}} {1'b1} };
     @(negedge control__pclock);
     register__{{register.hierarchical_name}}__{{field.name}}__hw_write_enable = 0;
     expected_data = ~{{field.width}}'d1;
@@ -1177,7 +1176,7 @@ module {{register_bank.name}}__register_bank__testbench;
       else $error("[%t] Incorrect value after Write-One-Clears for register field '{{register.hierarchical_name}}.{{field.name}}'. Expected '%0h' but got '%0h' instead.", $realtime, expected_data, field_sw_read_data);
     {%- elif field.sw_write_behavior == SoftwareWriteBehavior.WRITE_ONE_TOGGLES %}
     register__{{register.hierarchical_name}}__{{field.name}}__hw_write_enable = 1;
-    register__{{register.hierarchical_name}}__{{field.name}}__hw_write_data = ~0;
+    register__{{register.hierarchical_name}}__{{field.name}}__hw_write_data   = { {{field.width}} {1'b1} };
     @(negedge control__pclock);
     register__{{register.hierarchical_name}}__{{field.name}}__hw_write_enable = 0;
     expected_data = ~{{field.width}}'d1;
@@ -1230,10 +1229,9 @@ module {{register_bank.name}}__register_bank__testbench;
     {%- if register.is_software_writable() and register.sw_write_behavior != SoftwareWriteBehavior.NORMAL %}
     {%- if register.is_hardware_writable() and register.has_hw_write_option(HardwareWriteOptions.ENABLE) %}
     {§ spacing 1 §}
-    // '{{register.hierarchical_name}}' : {{register.sw_write_behavior|string}}
     {%- if register.sw_write_behavior == SoftwareWriteBehavior.WRITE_ONE_SETS %}
     register__{{register.hierarchical_name}}__hw_write_enable = 1;
-    register__{{register.hierarchical_name}}__hw_write_data = 0;
+    register__{{register.hierarchical_name}}__hw_write_data   = 0;
     @(negedge control__pclock);
     register__{{register.hierarchical_name}}__hw_write_enable = 0;
     expected_data = {{register.width}}'d1;
@@ -1244,7 +1242,7 @@ module {{register_bank.name}}__register_bank__testbench;
       else $error("[%t] Incorrect value after Write-One-Sets for register '{{register.hierarchical_name}}'. Expected '%0h' but got '%0h' instead.", $realtime, expected_data, register_sw_read_data);
     {%- elif register.sw_write_behavior == SoftwareWriteBehavior.WRITE_ONE_CLEARS %}
     register__{{register.hierarchical_name}}__hw_write_enable = 1;
-    register__{{register.hierarchical_name}}__hw_write_data = ~0;
+    register__{{register.hierarchical_name}}__hw_write_data   = { {{register.width}} {1'b1} };
     @(negedge control__pclock);
     register__{{register.hierarchical_name}}__hw_write_enable = 0;
     expected_data = ~{{register.width}}'d1;
@@ -1255,7 +1253,7 @@ module {{register_bank.name}}__register_bank__testbench;
       else $error("[%t] Incorrect value after Write-One-Clears for register '{{register.hierarchical_name}}'. Expected '%0h' but got '%0h' instead.", $realtime, expected_data, register_sw_read_data);
     {%- elif register.sw_write_behavior == SoftwareWriteBehavior.WRITE_ONE_TOGGLES %}
     register__{{register.hierarchical_name}}__hw_write_enable = 1;
-    register__{{register.hierarchical_name}}__hw_write_data = ~0;
+    register__{{register.hierarchical_name}}__hw_write_data   = { {{register.width}} {1'b1} };
     @(negedge control__pclock);
     register__{{register.hierarchical_name}}__hw_write_enable = 0;
     expected_data = ~{{register.width}}'d1;
@@ -1266,7 +1264,7 @@ module {{register_bank.name}}__register_bank__testbench;
       else $error("[%t] Incorrect value after Write-One-Toggles for register '{{register.hierarchical_name}}'. Expected '%0h' but got '%0h' instead.", $realtime, expected_data, register_sw_read_data);
     {%- elif register.sw_write_behavior == SoftwareWriteBehavior.WRITE_ZERO_SETS %}
     register__{{register.hierarchical_name}}__hw_write_enable = 1;
-    register__{{register.hierarchical_name}}__hw_write_data = 0;
+    register__{{register.hierarchical_name}}__hw_write_data   = { {{register.width}} {1'b0} };
     @(negedge control__pclock);
     register__{{register.hierarchical_name}}__hw_write_enable = 0;
     expected_data = ~{{register.width}}'d1;
@@ -1277,7 +1275,7 @@ module {{register_bank.name}}__register_bank__testbench;
       else $error("[%t] Incorrect value after Write-Zero-Sets for register '{{register.hierarchical_name}}'. Expected '%0h' but got '%0h' instead.", $realtime, expected_data, register_sw_read_data);
     {%- elif register.sw_write_behavior == SoftwareWriteBehavior.WRITE_ZERO_CLEARS %}
     register__{{register.hierarchical_name}}__hw_write_enable = 1;
-    register__{{register.hierarchical_name}}__hw_write_data = ~0;
+    register__{{register.hierarchical_name}}__hw_write_data   = { {{register.width}} {1'b1} };
     @(negedge control__pclock);
     register__{{register.hierarchical_name}}__hw_write_enable = 0;
     expected_data = {{register.width}}'d1;
@@ -1288,7 +1286,7 @@ module {{register_bank.name}}__register_bank__testbench;
       else $error("[%t] Incorrect value after Write-Zero-Clears for register '{{register.hierarchical_name}}'. Expected '%0h' but got '%0h' instead.", $realtime, expected_data, register_sw_read_data);
     {%- elif register.sw_write_behavior == SoftwareWriteBehavior.WRITE_ZERO_TOGGLES %}
     register__{{register.hierarchical_name}}__hw_write_enable = 1;
-    register__{{register.hierarchical_name}}__hw_write_data = 0;
+    register__{{register.hierarchical_name}}__hw_write_data   = { {{register.width}} {1'b0} };
     @(negedge control__pclock);
     register__{{register.hierarchical_name}}__hw_write_enable = 0;
     expected_data = ~{{register.width}}'d1;
@@ -1300,6 +1298,147 @@ module {{register_bank.name}}__register_bank__testbench;
     {%- endif %} {#- behavior #}
     {%- endif %} {#- has hw write enable #}
     {%- endif %} {#- is_sw_writable and non-NORMAL #}
+    {%- endif %} {#- fields #}
+    {%- endfor %} {#- registers #}
+
+    repeat(5) @(negedge control__pclock);
+
+
+    {§ spacing 2 §}
+
+
+    // Check 16 : Software read behaviors
+    $display("CHECK 16 : Software read behaviors.");
+    {%- for register in register_bank.registers %}
+    {%- if register.fields %} {%- for field in register.fields %}
+    {%- if field.is_software_readable() and field.sw_read_side_effect_init %}
+    {§ spacing 1 §}
+    {%- if field.sw_read_behavior == SoftwareReadBehavior.READ_CLEARS -%}
+      {%- set before = "{ " ~ field.width ~ " {1'b1} }" -%}
+      {%- set after  = "{ " ~ field.width ~ " {1'b0} }" -%}
+      {%- set behavior_name = "Read-Clears" -%}
+    {%- elif field.sw_read_behavior == SoftwareReadBehavior.READ_SETS -%}
+      {%- set before = "{ " ~ field.width ~ " {1'b0} }" -%}
+      {%- set after  = "{ " ~ field.width ~ " {1'b1} }" -%}
+      {%- set behavior_name = "Read-Sets" -%}
+    {%- elif field.sw_read_behavior == SoftwareReadBehavior.READ_RESETS -%}
+      {%- set before = field.width ~ "'h" ~ (((2 ** field.width - 1) - field.reset_value)|hexadecimal) -%}
+      {%- set after  = field.width ~ "'h" ~ (field.reset_value|hexadecimal) -%}
+      {%- set behavior_name = "Read-Resets" -%}
+    {%- endif -%}
+    {%- if field.sw_read_side_effect_init == 'sw_normal_write' %}
+    expected_data = {{before}};
+    register_sw_write_data = expected_data << register__{{register.hierarchical_name}}__{{field.name}}__offset;
+    register_write(register__{{register.hierarchical_name}}__address, register_sw_write_data);
+    {%- elif field.sw_read_side_effect_init == 'hw_enable_write' %}
+    register__{{register.hierarchical_name}}__{{field.name}}__hw_write_enable = 1;
+    register__{{register.hierarchical_name}}__{{field.name}}__hw_write_data   = {{before}};
+    @(negedge control__pclock);
+    register__{{register.hierarchical_name}}__{{field.name}}__hw_write_enable = 0;
+    {%- elif field.sw_read_side_effect_init == 'sw_write_one_sets' %}
+    expected_data = { {{field.width}} {1'b1} };
+    register_sw_write_data = expected_data << register__{{register.hierarchical_name}}__{{field.name}}__offset;
+    register_write(register__{{register.hierarchical_name}}__address, register_sw_write_data);
+    {%- elif field.sw_read_side_effect_init == 'sw_write_zero_sets' %}
+    register_sw_write_data = 0;
+    register_write(register__{{register.hierarchical_name}}__address, register_sw_write_data);
+    {%- elif field.sw_read_side_effect_init == 'hw_set_all' %}
+    register__{{register.hierarchical_name}}__{{field.name}}__hw_set_all = 1;
+    @(negedge control__pclock);
+    register__{{register.hierarchical_name}}__{{field.name}}__hw_set_all = 0;
+    {%- elif field.sw_read_side_effect_init == 'hw_set_mask' %}
+    register__{{register.hierarchical_name}}__{{field.name}}__hw_set_mask = { {{field.width}} {1'b1} };
+    @(negedge control__pclock);
+    register__{{register.hierarchical_name}}__{{field.name}}__hw_set_mask = 0;
+    {%- elif field.sw_read_side_effect_init == 'sw_write_one_clears' %}
+    expected_data = { {{field.width}} {1'b1} };
+    register_sw_write_data = expected_data << register__{{register.hierarchical_name}}__{{field.name}}__offset;
+    register_write(register__{{register.hierarchical_name}}__address, register_sw_write_data);
+    {%- elif field.sw_read_side_effect_init == 'sw_write_zero_clears' %}
+    register_sw_write_data = 0;
+    register_write(register__{{register.hierarchical_name}}__address, register_sw_write_data);
+    {%- elif field.sw_read_side_effect_init == 'hw_clear_all' %}
+    register__{{register.hierarchical_name}}__{{field.name}}__hw_clear_all = 1;
+    @(negedge control__pclock);
+    register__{{register.hierarchical_name}}__{{field.name}}__hw_clear_all = 0;
+    {%- elif field.sw_read_side_effect_init == 'hw_clear_mask' %}
+    register__{{register.hierarchical_name}}__{{field.name}}__hw_clear_mask = { {{field.width}} {1'b1} };
+    @(negedge control__pclock);
+    register__{{register.hierarchical_name}}__{{field.name}}__hw_clear_mask = 0;
+    {%- endif %}
+    register_read(register__{{register.hierarchical_name}}__address);
+    field_sw_read_data = (register_sw_read_data & register__{{register.hierarchical_name}}__{{field.name}}__mask) >> register__{{register.hierarchical_name}}__{{field.name}}__offset;
+    expected_data = {{before}};
+    assert(field_sw_read_data === expected_data)
+      else $error("[%t] Incorrect value on first read for register field '{{register.hierarchical_name}}.{{field.name}}' with {{behavior_name}}. Expected '%0h' but got '%0h' instead.", $realtime, expected_data, field_sw_read_data);
+    register_read(register__{{register.hierarchical_name}}__address);
+    field_sw_read_data = (register_sw_read_data & register__{{register.hierarchical_name}}__{{field.name}}__mask) >> register__{{register.hierarchical_name}}__{{field.name}}__offset;
+    expected_data = {{after}};
+    assert(field_sw_read_data === expected_data)
+      else $error("[%t] Incorrect value after {{behavior_name}} for register field '{{register.hierarchical_name}}.{{field.name}}'. Expected '%0h' but got '%0h' instead.", $realtime, expected_data, field_sw_read_data);
+    {%- endif %} {#- field.is_software_readable and sw_read_side_effect_init #}
+    {%- endfor %} {%- else %} {#- fields #}
+    {%- if register.is_software_readable() and register.sw_read_side_effect_init %}
+    {§ spacing 1 §}
+    {%- if register.sw_read_behavior == SoftwareReadBehavior.READ_CLEARS -%}
+      {%- set before = "{ " ~ register.width ~ " {1'b1} }" -%}
+      {%- set after  = "{ " ~ register.width ~ " {1'b0} }" -%}
+      {%- set behavior_name = "Read-Clears" -%}
+    {%- elif register.sw_read_behavior == SoftwareReadBehavior.READ_SETS -%}
+      {%- set before = "{ " ~ register.width ~ " {1'b0} }" -%}
+      {%- set after  = "{ " ~ register.width ~ " {1'b1} }" -%}
+      {%- set behavior_name = "Read-Sets" -%}
+    {%- elif register.sw_read_behavior == SoftwareReadBehavior.READ_RESETS -%}
+      {%- set before = register.width ~ "'h" ~ (((2 ** register.width - 1) - register.reset_value)|hexadecimal) -%}
+      {%- set after  = register.width ~ "'h" ~ (register.reset_value|hexadecimal) -%}
+      {%- set behavior_name = "Read-Resets" -%}
+    {%- endif -%}
+    {%- if register.sw_read_side_effect_init == 'sw_normal_write' %}
+    register_sw_write_data = {{before}};
+    register_write(register__{{register.hierarchical_name}}__address, register_sw_write_data);
+    {%- elif register.sw_read_side_effect_init == 'hw_enable_write' %}
+    register__{{register.hierarchical_name}}__hw_write_enable = 1;
+    register__{{register.hierarchical_name}}__hw_write_data   = {{before}};
+    @(negedge control__pclock);
+    register__{{register.hierarchical_name}}__hw_write_enable = 0;
+    {%- elif register.sw_read_side_effect_init == 'sw_write_one_sets' %}
+    register_sw_write_data = { {{register.width}} {1'b1} };
+    register_write(register__{{register.hierarchical_name}}__address, register_sw_write_data);
+    {%- elif register.sw_read_side_effect_init == 'sw_write_zero_sets' %}
+    register_sw_write_data = 0;
+    register_write(register__{{register.hierarchical_name}}__address, register_sw_write_data);
+    {%- elif register.sw_read_side_effect_init == 'hw_set_all' %}
+    register__{{register.hierarchical_name}}__hw_set_all = 1;
+    @(negedge control__pclock);
+    register__{{register.hierarchical_name}}__hw_set_all = 0;
+    {%- elif register.sw_read_side_effect_init == 'hw_set_mask' %}
+    register__{{register.hierarchical_name}}__hw_set_mask = { {{register.width}} {1'b1} };
+    @(negedge control__pclock);
+    register__{{register.hierarchical_name}}__hw_set_mask = 0;
+    {%- elif register.sw_read_side_effect_init == 'sw_write_one_clears' %}
+    register_sw_write_data = { {{register.width}} {1'b1} };
+    register_write(register__{{register.hierarchical_name}}__address, register_sw_write_data);
+    {%- elif register.sw_read_side_effect_init == 'sw_write_zero_clears' %}
+    register_sw_write_data = 0;
+    register_write(register__{{register.hierarchical_name}}__address, register_sw_write_data);
+    {%- elif register.sw_read_side_effect_init == 'hw_clear_all' %}
+    register__{{register.hierarchical_name}}__hw_clear_all = 1;
+    @(negedge control__pclock);
+    register__{{register.hierarchical_name}}__hw_clear_all = 0;
+    {%- elif register.sw_read_side_effect_init == 'hw_clear_mask' %}
+    register__{{register.hierarchical_name}}__hw_clear_mask = { {{register.width}} {1'b1} };
+    @(negedge control__pclock);
+    register__{{register.hierarchical_name}}__hw_clear_mask = 0;
+    {%- endif %}
+    register_read(register__{{register.hierarchical_name}}__address);
+    expected_data = {{before}};
+    assert(register_sw_read_data === expected_data)
+      else $error("[%t] Incorrect value on first read for register '{{register.hierarchical_name}}' with {{behavior_name}}. Expected '%0h' but got '%0h' instead.", $realtime, expected_data, register_sw_read_data);
+    register_read(register__{{register.hierarchical_name}}__address);
+    expected_data = {{after}};
+    assert(register_sw_read_data === expected_data)
+      else $error("[%t] Incorrect value after {{behavior_name}} for register '{{register.hierarchical_name}}'. Expected '%0h' but got '%0h' instead.", $realtime, expected_data, register_sw_read_data);
+    {%- endif %} {#- register.is_software_readable and sw_read_side_effect_init #}
     {%- endif %} {#- fields #}
     {%- endfor %} {#- registers #}
 
