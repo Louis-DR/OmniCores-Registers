@@ -36,14 +36,14 @@
       #define {{register_bank.name|upper}}__{{register.hierarchical_name|upper}}__WIDTH   § {{register.width}} §§
       #define {{register_bank.name|upper}}__{{register.hierarchical_name|upper}}__MASK    § 0x{{(2**register.width-1)|hexadecimal}} §§
       {%- if register.reset_value is not none %}
-        #define {{register_bank.name|upper}}__{{register.hierarchical_name|upper}}__RESET_VALUE § 0x{{register.reset_value|hexadecimal}} §§
+        #define {{register_bank.name|upper}}__{{register.hierarchical_name|upper}}__RESET_VALUE § 0x{{register.reset_value|hexadecimal((register.width/4)|ceil)}} §§
       {%- endif %} {#- register.reset_value #}
       {% if register.fields %} {%- for field in register.fields %}
         #define {{register_bank.name|upper}}__{{register.hierarchical_name|upper}}__{{field.name|upper}}__OFFSET § {{field.offset}} §§
         #define {{register_bank.name|upper}}__{{register.hierarchical_name|upper}}__{{field.name|upper}}__WIDTH  § {{field.width}} §§
         #define {{register_bank.name|upper}}__{{register.hierarchical_name|upper}}__{{field.name|upper}}__MASK   § 0x{{(2**field.offset*(2**field.width-1))|hexadecimal}} §§
         {%- if field.reset_value is not none %}
-          #define {{register_bank.name|upper}}__{{register.hierarchical_name|upper}}__{{field.name|upper}}__RESET_VALUE § 0x{{field.reset_value|hexadecimal}} §§
+          #define {{register_bank.name|upper}}__{{register.hierarchical_name|upper}}__{{field.name|upper}}__RESET_VALUE § 0x{{field.reset_value|hexadecimal((field.width/4)|ceil)}} §§
         {%- endif %} {#- field.reset_value #}
       {% endfor %} {%- endif %} {#- fields #}
     {%- endif %}

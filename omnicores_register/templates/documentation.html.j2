@@ -83,7 +83,7 @@
         <tr><td>Hierarchical Name</td><td class="mono">{{expanded.hierarchical_name}}</td></tr>
         {%- endif %}
         <tr><td>Width</td><td>{{expanded.width}} bits</td></tr>
-        <tr><td>Reset Value</td><td class="mono">{% if expanded.reset_value is not none %}<span class="copyable">0x{{expanded.reset_value|hexadecimal}}</span>{% else %}&mdash;{% endif %}</td></tr>
+        <tr><td>Reset Value</td><td class="mono">{% if expanded.reset_value is not none %}<span class="copyable">0x{{expanded.reset_value|hexadecimal((expanded.width/4)|ceil)}}</span>{% else %}&mdash;{% endif %}</td></tr>
         <tr><td>Software Access</td><td>{{expanded.software_access|repr}}</td></tr>
         <tr><td>Hardware Access</td><td>{{expanded.hardware_access|repr}}</td></tr>
       </table>
@@ -111,7 +111,7 @@
               <br><span class="field-title">{{field.title}}</span>
               {%- endif %}
             </td>
-            <td class="mono column-reset">{% if field.reset_value is not none %}<span class="copyable">0x{{field.reset_value|hexadecimal}}</span>{% else %}&mdash;{% endif %}</td>
+            <td class="mono column-reset">{% if field.reset_value is not none %}<span class="copyable">0x{{field.reset_value|hexadecimal((field.width/4)|ceil)}}</span>{% else %}&mdash;{% endif %}</td>
             <td class="column-access">
               <span class="sw-access">SW {{field.software_access|repr}}</span>
               <br>
@@ -258,7 +258,7 @@
         <tr><td>Hierarchical Name</td><td class="mono">{{component.hierarchical_name}}</td></tr>
         {%- endif %}
         <tr><td>Width</td><td>{{component.width}} bits</td></tr>
-        <tr><td>Reset Value</td><td class="mono">{% if component.reset_value is not none %}<span class="copyable">0x{{component.reset_value|hexadecimal}}</span>{% else %}&mdash;{% endif %}</td></tr>
+        <tr><td>Reset Value</td><td class="mono">{% if component.reset_value is not none %}<span class="copyable">0x{{component.reset_value|hexadecimal((component.width/4)|ceil)}}</span>{% else %}&mdash;{% endif %}</td></tr>
         <tr><td>Software Access</td><td>{{component.software_access|repr}}</td></tr>
         <tr><td>Hardware Access</td><td>{{component.hardware_access|repr}}</td></tr>
       </table>
@@ -286,7 +286,7 @@
               <br><span class="field-title">{{field.title}}</span>
               {%- endif %}
             </td>
-            <td class="mono column-reset">{% if field.reset_value is not none %}<span class="copyable">0x{{field.reset_value|hexadecimal}}</span>{% else %}&mdash;{% endif %}</td>
+            <td class="mono column-reset">{% if field.reset_value is not none %}<span class="copyable">0x{{field.reset_value|hexadecimal((field.width/4)|ceil)}}</span>{% else %}&mdash;{% endif %}</td>
             <td class="column-access">
               <span class="sw-access">SW {{field.software_access|repr}}</span>
               <br>

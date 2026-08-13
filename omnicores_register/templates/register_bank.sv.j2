@@ -185,11 +185,11 @@ module {{register_bank.name}}__register_bank (
         {%- for register in register_bank.registers %}
           {%- if register.fields %} {%- for field in register.fields %}
             {%- if field.reset_value is not none %}
-              register__{{register.hierarchical_name}}__{{field.name}}__storage § <= § {{field.width}}'h{{field.reset_value|hexadecimal}}; §§
+              register__{{register.hierarchical_name}}__{{field.name}}__storage § <= § {{field.width}}'h{{field.reset_value|hexadecimal((field.width/4)|ceil)}}; §§
             {%- endif %}
           {%- endfor %} {%- else %}
             {%- if register.reset_value is not none %}
-              register__{{register.hierarchical_name}}__storage § <= § {{register.width}}'h{{register.reset_value|hexadecimal}}; §§
+              register__{{register.hierarchical_name}}__storage § <= § {{register.width}}'h{{register.reset_value|hexadecimal((register.width/4)|ceil)}}; §§
             {%- endif %}
           {%- endif %}
         {%- endfor %}
@@ -312,7 +312,7 @@ module {{register_bank.name}}__register_bank (
             {%- endif %}
             {%- if field.has_hw_write_option(HardwareWriteOptions.RESET) %}
               {%- if field.reset_value is not none %}
-                {% if not first %}else {% endif %}if § (register__{{register.hierarchical_name}}__{{field.name}}__hw_reset) § register__{{register.hierarchical_name}}__{{field.name}}__storage § <= {{field.width}}'h{{field.reset_value|hexadecimal}};
+                {% if not first %}else {% endif %}if § (register__{{register.hierarchical_name}}__{{field.name}}__hw_reset) § register__{{register.hierarchical_name}}__{{field.name}}__storage § <= {{field.width}}'h{{field.reset_value|hexadecimal((field.width/4)|ceil)}};
               {%- endif %}
               {%- set first = false %}
             {%- endif %}
@@ -354,7 +354,7 @@ module {{register_bank.name}}__register_bank (
             {%- endif %}
             {%- if register.has_hw_write_option(HardwareWriteOptions.RESET) %}
               {%- if register.reset_value is not none %}
-                {% if not first %}else {% endif %}if § (register__{{register.hierarchical_name}}__hw_reset) § register__{{register.hierarchical_name}}__storage § <= {{register.width}}'h{{register.reset_value|hexadecimal}};
+                {% if not first %}else {% endif %}if § (register__{{register.hierarchical_name}}__hw_reset) § register__{{register.hierarchical_name}}__storage § <= {{register.width}}'h{{register.reset_value|hexadecimal((register.width/4)|ceil)}};
               {%- endif %}
               {%- set first = false %}
             {%- endif %}
@@ -395,7 +395,7 @@ module {{register_bank.name}}__register_bank (
                       {% elif field.sw_read_behavior == SoftwareReadBehavior.READ_SETS -%}
                         § register__{{register.hierarchical_name}}__{{field.name}}__storage § <= { {{field.width}} {1'b1} };
                       {% elif field.sw_read_behavior == SoftwareReadBehavior.READ_RESETS -%}
-                        § register__{{register.hierarchical_name}}__{{field.name}}__storage § <= {{field.width}}'h{{field.reset_value|hexadecimal}};
+                        § register__{{register.hierarchical_name}}__{{field.name}}__storage § <= {{field.width}}'h{{field.reset_value|hexadecimal((field.width/4)|ceil)}};
                       {%- endif -%}
                     {%- endif -%}
                   {%- endfor %} end
@@ -405,7 +405,7 @@ module {{register_bank.name}}__register_bank (
                 {%- elif register.sw_read_behavior == SoftwareReadBehavior.READ_SETS %}
                   32'h{{register.address|hexadecimal}}: § register__{{register.hierarchical_name}}__storage § <= { {{register.width}} {1'b1} };
                 {%- elif register.sw_read_behavior == SoftwareReadBehavior.READ_RESETS %}
-                  32'h{{register.address|hexadecimal}}: § register__{{register.hierarchical_name}}__storage § <= {{register.width}}'h{{register.reset_value|hexadecimal}};
+                  32'h{{register.address|hexadecimal}}: § register__{{register.hierarchical_name}}__storage § <= {{register.width}}'h{{register.reset_value|hexadecimal((register.width/4)|ceil)}};
                 {%- endif %}
               {%- endif %} {#- fields #}
             {%- endif %} {#- has_sw_read_side_effect #}
