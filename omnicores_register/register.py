@@ -113,5 +113,4 @@ class Register(AddressableComponent, AccessibleComponent):
             row[-1]['least_significant_bit'] = bit
 
       rows.append(row)
-
     return rows

@@ -13,6 +13,7 @@
 
 from omnicores_register.component_container import ComponentContainer
 from omnicores_register.elaborate import elaborate
+from omnicores_register.validate import validate
 from omnicores_register.generate import generate
 from omnicores_register.enums import PackingPolicy, UNSPECIFIED
 
@@ -32,4 +33,5 @@ class RegisterBank(ComponentContainer):
 
   # Import the methods from their dedicated files
   elaborate = elaborate
+  validate  = validate
   generate  = generate
