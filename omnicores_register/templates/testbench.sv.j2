@@ -471,7 +471,7 @@ module {{register_bank.name}}__register_bank__testbench;
     $display("CHECK 2 : Software write all ones.");
     {%- for register in register_bank.registers %}
     {%- if register.fields %} {%- for field in register.fields %}
-    {%- if field.is_software_writable() and field.sw_write_behavior == SoftwareWriteBehavior.NORMAL and not (field.has_hw_write_option(HardwareWriteOptions.CONTINUOUS) and not field.has_hw_write_option(HardwareWriteOptions.ENABLE)) %}
+    {%- if field.is_software_writable() and field.sw_write_behavior == SoftwareWriteBehavior.NORMAL and not field.is_software_write_once() and not (field.has_hw_write_option(HardwareWriteOptions.CONTINUOUS) and not field.has_hw_write_option(HardwareWriteOptions.ENABLE)) %}
     {§ spacing 1 §}
     expected_data = { {{field.width}} {1'b1}};
     register_sw_write_data = expected_data << register__{{register.hierarchical_name}}__{{field.name}}__offset;
@@ -493,7 +493,7 @@ module {{register_bank.name}}__register_bank__testbench;
     {%- endif %} {#- field.is_software_readable and field.is_hardware_readable #}
     {%- endif %} {#- field.is_software_writable #}
     {%- endfor %} {%- else %} {#- fields #}
-    {%- if register.is_software_writable() and register.sw_write_behavior == SoftwareWriteBehavior.NORMAL and not (register.has_hw_write_option(HardwareWriteOptions.CONTINUOUS) and not register.has_hw_write_option(HardwareWriteOptions.ENABLE)) %}
+    {%- if register.is_software_writable() and register.sw_write_behavior == SoftwareWriteBehavior.NORMAL and not register.is_software_write_once() and not (register.has_hw_write_option(HardwareWriteOptions.CONTINUOUS) and not register.has_hw_write_option(HardwareWriteOptions.ENABLE)) %}
     {§ spacing 1 §}
     expected_data = { {{register.width}} {1'b1}};
     register_sw_write_data = expected_data;
@@ -526,7 +526,7 @@ module {{register_bank.name}}__register_bank__testbench;
     $display("CHECK 3 : Software write all zeros.");
     {%- for register in register_bank.registers %}
     {%- if register.fields %} {%- for field in register.fields %}
-    {%- if field.is_software_writable() and field.sw_write_behavior == SoftwareWriteBehavior.NORMAL and not (field.has_hw_write_option(HardwareWriteOptions.CONTINUOUS) and not field.has_hw_write_option(HardwareWriteOptions.ENABLE)) %}
+    {%- if field.is_software_writable() and field.sw_write_behavior == SoftwareWriteBehavior.NORMAL and not field.is_software_write_once() and not (field.has_hw_write_option(HardwareWriteOptions.CONTINUOUS) and not field.has_hw_write_option(HardwareWriteOptions.ENABLE)) %}
     {§ spacing 1 §}
     expected_data = { {{field.width}} {1'b0}};
     register_sw_write_data = expected_data << register__{{register.hierarchical_name}}__{{field.name}}__offset;
@@ -548,7 +548,7 @@ module {{register_bank.name}}__register_bank__testbench;
     {%- endif %} {#- field.is_software_readable and field.is_hardware_readable #}
     {%- endif %} {#- field.is_software_writable #}
     {%- endfor %} {%- else %} {#- fields #}
-    {%- if register.is_software_writable() and register.sw_write_behavior == SoftwareWriteBehavior.NORMAL and not (register.has_hw_write_option(HardwareWriteOptions.CONTINUOUS) and not register.has_hw_write_option(HardwareWriteOptions.ENABLE)) %}
+    {%- if register.is_software_writable() and register.sw_write_behavior == SoftwareWriteBehavior.NORMAL and not register.is_software_write_once() and not (register.has_hw_write_option(HardwareWriteOptions.CONTINUOUS) and not register.has_hw_write_option(HardwareWriteOptions.ENABLE)) %}
     {§ spacing 1 §}
     expected_data = { {{register.width}} {1'b0}};
     register_sw_write_data = expected_data;
@@ -1439,6 +1439,74 @@ module {{register_bank.name}}__register_bank__testbench;
     assert(register_sw_read_data === expected_data)
       else $error("[%t] Incorrect value after {{behavior_name}} for register '{{register.hierarchical_name}}'. Expected '%0h' but got '%0h' instead.", $realtime, expected_data, register_sw_read_data);
     {%- endif %} {#- register.is_software_readable and sw_read_side_effect_init #}
+    {%- endif %} {#- fields #}
+    {%- endfor %} {#- registers #}
+
+    repeat(5) @(negedge control__pclock);
+
+
+    {§ spacing 2 §}
+
+
+    // Check 17 : Software write-once
+    $display("CHECK 17 : Software write-once.");
+    {%- for register in register_bank.registers %}
+    {%- if register.fields %} {%- for field in register.fields %}
+    {%- if field.is_software_write_once() %}
+    {§ spacing 1 §}
+    expected_data = { {{field.width}} {1'b1} };
+    register_sw_write_data = expected_data << register__{{register.hierarchical_name}}__{{field.name}}__offset;
+    register_write(register__{{register.hierarchical_name}}__address, register_sw_write_data);
+    {%- if field.is_software_readable() %}
+    register_read(register__{{register.hierarchical_name}}__address);
+    field_sw_read_data = (register_sw_read_data & register__{{register.hierarchical_name}}__{{field.name}}__mask) >> register__{{register.hierarchical_name}}__{{field.name}}__offset;
+    assert(field_sw_read_data === expected_data)
+      else $error("[%t] Incorrect value after first write for register field '{{register.hierarchical_name}}.{{field.name}}' with write-once. Expected '%0h' but got '%0h' instead.", $realtime, expected_data, field_sw_read_data);
+    {%- elif field.has_hw_read_option(HardwareReadOptions.DATA) %}
+    field_hw_read_data = register__{{register.hierarchical_name}}__{{field.name}};
+    assert(field_hw_read_data === expected_data)
+      else $error("[%t] Incorrect value after first write for register field '{{register.hierarchical_name}}.{{field.name}}' with write-once. Expected '%0h' but got '%0h' instead.", $realtime, expected_data, field_hw_read_data);
+    {%- endif %}
+    register_sw_write_data = 0;
+    register_write(register__{{register.hierarchical_name}}__address, register_sw_write_data);
+    {%- if field.is_software_readable() %}
+    register_read(register__{{register.hierarchical_name}}__address);
+    field_sw_read_data = (register_sw_read_data & register__{{register.hierarchical_name}}__{{field.name}}__mask) >> register__{{register.hierarchical_name}}__{{field.name}}__offset;
+    assert(field_sw_read_data === expected_data)
+      else $error("[%t] Incorrect value after second write for register field '{{register.hierarchical_name}}.{{field.name}}' with write-once. Expected '%0h' but got '%0h' instead.", $realtime, expected_data, field_sw_read_data);
+    {%- elif field.has_hw_read_option(HardwareReadOptions.DATA) %}
+    field_hw_read_data = register__{{register.hierarchical_name}}__{{field.name}};
+    assert(field_hw_read_data === expected_data)
+      else $error("[%t] Incorrect value after second write for register field '{{register.hierarchical_name}}.{{field.name}}' with write-once. Expected '%0h' but got '%0h' instead.", $realtime, expected_data, field_hw_read_data);
+    {%- endif %}
+    {%- endif %} {#- field.is_software_write_once #}
+    {%- endfor %} {%- else %} {#- fields #}
+    {%- if register.is_software_write_once() %}
+    {§ spacing 1 §}
+    expected_data = { {{register.width}} {1'b1} };
+    register_sw_write_data = expected_data;
+    register_write(register__{{register.hierarchical_name}}__address, register_sw_write_data);
+    {%- if register.is_software_readable() %}
+    register_read(register__{{register.hierarchical_name}}__address);
+    assert(register_sw_read_data === expected_data)
+      else $error("[%t] Incorrect value after first write for register '{{register.hierarchical_name}}' with write-once. Expected '%0h' but got '%0h' instead.", $realtime, expected_data, register_sw_read_data);
+    {%- elif register.has_hw_read_option(HardwareReadOptions.DATA) %}
+    register_hw_read_data = register__{{register.hierarchical_name}};
+    assert(register_hw_read_data === expected_data)
+      else $error("[%t] Incorrect value after first write for register '{{register.hierarchical_name}}' with write-once. Expected '%0h' but got '%0h' instead.", $realtime, expected_data, register_hw_read_data);
+    {%- endif %}
+    register_sw_write_data = 0;
+    register_write(register__{{register.hierarchical_name}}__address, register_sw_write_data);
+    {%- if register.is_software_readable() %}
+    register_read(register__{{register.hierarchical_name}}__address);
+    assert(register_sw_read_data === expected_data)
+      else $error("[%t] Incorrect value after second write for register '{{register.hierarchical_name}}' with write-once. Expected '%0h' but got '%0h' instead.", $realtime, expected_data, register_sw_read_data);
+    {%- elif register.has_hw_read_option(HardwareReadOptions.DATA) %}
+    register_hw_read_data = register__{{register.hierarchical_name}};
+    assert(register_hw_read_data === expected_data)
+      else $error("[%t] Incorrect value after second write for register '{{register.hierarchical_name}}' with write-once. Expected '%0h' but got '%0h' instead.", $realtime, expected_data, register_hw_read_data);
+    {%- endif %}
+    {%- endif %} {#- register.is_software_write_once #}
     {%- endif %} {#- fields #}
     {%- endfor %} {#- registers #}
 
