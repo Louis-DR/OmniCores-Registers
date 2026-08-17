@@ -144,8 +144,14 @@ module {{register_bank.name}}__register_bank (
     {%- for register in register_bank.registers %}
       {%- if register.fields %} {%- for field in register.fields %}
         logic {{field.width|arr}} register__{{register.hierarchical_name}}__{{field.name}}__storage;
+        {%- if field.is_software_write_once() %}
+        logic                     register__{{register.hierarchical_name}}__{{field.name}}__written;
+        {%- endif %}
       {%- endfor %} {%- else %}
         logic {{register.width|arr}} register__{{register.hierarchical_name}}__storage;
+        {%- if register.is_software_write_once() %}
+        logic                        register__{{register.hierarchical_name}}__written;
+        {%- endif %}
       {%- endif %}
     {%- endfor %}
   {%- endfilter %} {#- autoformat_signal_definitions #}
@@ -187,9 +193,15 @@ module {{register_bank.name}}__register_bank (
             {%- if field.reset_value is not none %}
               register__{{register.hierarchical_name}}__{{field.name}}__storage § <= § {{field.width}}'h{{field.reset_value|hexadecimal((field.width/4)|ceil)}}; §§
             {%- endif %}
+            {%- if field.is_software_write_once() %}
+              register__{{register.hierarchical_name}}__{{field.name}}__written § <= § 1'b0; §§
+            {%- endif %}
           {%- endfor %} {%- else %}
             {%- if register.reset_value is not none %}
               register__{{register.hierarchical_name}}__storage § <= § {{register.width}}'h{{register.reset_value|hexadecimal((register.width/4)|ceil)}}; §§
+            {%- endif %}
+            {%- if register.is_software_write_once() %}
+              register__{{register.hierarchical_name}}__written § <= § 1'b0; §§
             {%- endif %}
           {%- endif %}
         {%- endfor %}
@@ -212,8 +224,8 @@ module {{register_bank.name}}__register_bank (
         {%- filter reindent(4) %}
           {%- for register in register_bank.registers %}
             {%- if register.fields %}
-              {%- if register.is_software_writable() %}
-                32'h{{register.address|hexadecimal}} {§ align §} : begin {%- for field in register.fields -%} {%- if field.is_software_writable() -%}
+              {%- if register.get_normal_sw_write_fields() %}
+                32'h{{register.address|hexadecimal}} {§ align §} : begin {%- for field in register.get_normal_sw_write_fields() -%}
                   {%- set file_name = "register__" ~ register.hierarchical_name ~ "__" ~ field.name ~ "__storage" -%}
                   {%- if field.sw_write_behavior == SoftwareWriteBehavior.NORMAL -%}
                     {§ align §} {{file_name}} {§ align §} <= control__pwdata {§ align §} [{{field.offset+field.width-1}}:{{field.offset}}]{§ align right §}; {{"end" if loop.last else "\n {§ align §} "}}
@@ -239,10 +251,10 @@ module {{register_bank.name}}__register_bank (
                     {%- endif -%}
                     {§ align §} {{file_name}} {§ align §} <= {{negate}}control__pwdata {§ align §} [{{field.offset+field.width-1}}:{{field.offset}}] {§ align right §} {{mask}}; {{"end" if loop.last else "\n {§ align §} "}}
                   {%- endif -%}
-                {%- endif -%} {%- endfor -%}
+                {%- endfor -%}
               {%- endif %}
             {%- else %}
-              {%- if register.is_software_writable() %}
+              {%- if register.is_software_writable() and not register.is_software_write_once() %}
                 {%- set register_name = "register__" ~ register.hierarchical_name ~ "__storage" -%}
                 {%- if register.sw_write_behavior == SoftwareWriteBehavior.NORMAL %}
                   32'h{{register.address|hexadecimal}} {§ align §} : {§ align §} {{register_name}} {§ align §} <= control__pwdata {§ align §} [{{register.width-1}}:0]{§ align right §};
@@ -275,6 +287,82 @@ module {{register_bank.name}}__register_bank (
         {%- endfilter %} {#- align #}
         {%- endfilter %} {#- replace #}
       endcase
+
+{% if register_bank.has_sw_write_once %}
+      // Write-once software write
+      case (control__paddr)
+        {%- for register in register_bank.registers %}
+        {%- if register.fields and register.has_sw_write_once_field() %}
+        32'h{{register.address|hexadecimal}} : begin
+          {%- for field in register.fields if field.is_software_write_once() %}
+          {%- set storage = "register__" ~ register.hierarchical_name ~ "__" ~ field.name ~ "__storage" %}
+          {%- set written = "register__" ~ register.hierarchical_name ~ "__" ~ field.name ~ "__written" %}
+          {%- set bit_range = "[" ~ (field.offset+field.width-1) ~ ":" ~ field.offset ~ "]" %}
+          if (!{{written}}) begin
+            {%- if field.sw_write_behavior == SoftwareWriteBehavior.NORMAL %}
+            register__{{register.hierarchical_name}}__{{field.name}}__storage <= control__pwdata [{{field.offset+field.width-1}}:{{field.offset}}];
+            {%- else -%}
+              {%-   if field.sw_write_behavior == SoftwareWriteBehavior.WRITE_ONE_SETS -%}
+                {%- set negation  = " " -%}
+                {%- set operation = "|" -%}
+              {%- elif field.sw_write_behavior == SoftwareWriteBehavior.WRITE_ONE_CLEARS -%}
+                {%- set negation  = "~" -%}
+                {%- set operation = "&" -%}
+              {%- elif field.sw_write_behavior == SoftwareWriteBehavior.WRITE_ONE_TOGGLES -%}
+                {%- set negation  = " " -%}
+                {%- set operation = "^" -%}
+              {%- elif field.sw_write_behavior == SoftwareWriteBehavior.WRITE_ZERO_SETS -%}
+                {%- set negation  = "~" -%}
+                {%- set operation = "|" -%}
+              {%- elif field.sw_write_behavior == SoftwareWriteBehavior.WRITE_ZERO_CLEARS -%}
+                {%- set negation  = " " -%}
+                {%- set operation = "&" -%}
+              {%- elif field.sw_write_behavior == SoftwareWriteBehavior.WRITE_ZERO_TOGGLES -%}
+                {%- set negation  = "~" -%}
+                {%- set operation = "^" -%}
+              {%- endif %}
+              register__{{register.hierarchical_name}}__{{field.name}}__storage <= {{negation}}control__pwdata [{{field.offset+field.width-1}}:{{field.offset}}] {{operation}} register__{{register.hierarchical_name}}__{{field.name}}__storage;
+            {%- endif %}
+            register__{{register.hierarchical_name}}__{{field.name}}__written <= 1'b1;
+          end
+          {%- endfor %}
+        end
+        {%- elif not register.fields and register.is_software_write_once() %}
+        {%- set storage = "register__" ~ register.hierarchical_name ~ "__storage" %}
+        {%- set written = "register__" ~ register.hierarchical_name ~ "__written" %}
+        32'h{{register.address|hexadecimal}} : begin
+          if (!{{written}}) begin
+            {%- if register.sw_write_behavior == SoftwareWriteBehavior.NORMAL %}
+            register__{{register.hierarchical_name}}__storage <= control__pwdata [{{register.width-1}}:0];
+            {%- else -%}
+              {%-   if register.sw_write_behavior == SoftwareWriteBehavior.WRITE_ONE_SETS -%}
+                {%- set negation  = " " -%}
+                {%- set operation = "|" -%}
+              {%- elif register.sw_write_behavior == SoftwareWriteBehavior.WRITE_ONE_CLEARS -%}
+                {%- set negation  = "~" -%}
+                {%- set operation = "&" -%}
+              {%- elif register.sw_write_behavior == SoftwareWriteBehavior.WRITE_ONE_TOGGLES -%}
+                {%- set negation  = " " -%}
+                {%- set operation = "^" -%}
+              {%- elif register.sw_write_behavior == SoftwareWriteBehavior.WRITE_ZERO_SETS -%}
+                {%- set negation  = "~" -%}
+                {%- set operation = "|" -%}
+              {%- elif register.sw_write_behavior == SoftwareWriteBehavior.WRITE_ZERO_CLEARS -%}
+                {%- set negation  = " " -%}
+                {%- set operation = "&" -%}
+              {%- elif register.sw_write_behavior == SoftwareWriteBehavior.WRITE_ZERO_TOGGLES -%}
+                {%- set negation  = "~" -%}
+                {%- set operation = "^" -%}
+              {%- endif %}
+              register__{{register.hierarchical_name}}__storage <= {{negation}}control__pwdata [{{register.width-1}}:0] {{operation}} register__{{register.hierarchical_name}}__storage;
+            {%- endif %}
+            register__{{register.hierarchical_name}}__written <= 1'b1;
+          end
+        end
+        {%- endif %}
+        {%- endfor %}
+      endcase
+{% endif %} {#- register_bank.has_sw_write_once #}
     end
 
     {§ spacing 1 §}
@@ -414,7 +502,7 @@ module {{register_bank.name}}__register_bank (
         {%- endfilter %} {#- align #}
       endcase
     end
-{%- endif %}
+{%- endif %} {#- register_bank.has_sw_read_side_effect #}
 
   end
 
@@ -444,8 +532,8 @@ module {{register_bank.name}}__register_bank (
           {%- filter reindent(5) %}
             {%- for register in register_bank.registers %}
               {%- if register.fields %}
-                {%- if register.is_software_readable() %}
-                  32'h{{register.address|hexadecimal}} § : begin {%- for field in register.fields -%} {%- if field.is_software_readable() %} § control__prdata § [{{field.offset+field.width-1}}:{{field.offset}}] §§ = register__{{register.hierarchical_name}}__{{field.name}}__storage; {{"end" if loop.last else "\n § "}} {%- endif -%} {%- endfor -%}
+                {%- if register.get_software_readable_fields() %}
+                  32'h{{register.address|hexadecimal}} § : begin {%- for field in register.get_software_readable_fields() -%} § control__prdata § [{{field.offset+field.width-1}}:{{field.offset}}] §§ = register__{{register.hierarchical_name}}__{{field.name}}__storage; {{"end" if loop.last else "\n § "}} {%- endfor -%}
                 {%- endif %}
               {%- else %}
                 {%- if register.is_software_readable() %}
