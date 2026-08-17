@@ -15,6 +15,8 @@ from omnicores_register.register_file import RegisterFile
 from omnicores_register.register import Register
 from omnicores_register.enums import (
   HardwareWriteOptions,
+  HardwareReadOptions,
+  SoftwareWriteBehavior,
   SoftwareReadBehavior,
 )
 
@@ -109,6 +111,59 @@ def _validate_reset_access_behaviors(self) -> int:
 
 
 
+def _validate_access_options(self) -> int:
+  """Check the compatibility of the software and hardware access options and behaviors with the access types."""
+  error_count = 0
+  def _validate_component_access_options(component, label:str) -> int:
+    nonlocal error_count
+    if component.sw_write_behavior != SoftwareWriteBehavior.NORMAL and not component.is_software_writable():
+      throw_error(f"{label} has software write behavior '{component.sw_write_behavior!r}' but is not software writable.")
+      error_count += 1
+    if component.sw_read_behavior != SoftwareReadBehavior.NORMAL and not component.is_software_readable():
+      throw_error(f"{label} has software read behavior '{component.sw_read_behavior!r}' but is not software readable.")
+      error_count += 1
+    if component.hw_write_options and not component.is_hardware_writable():
+      throw_error(f"{label} has hardware write options '{component.hw_write_options!r}' but is not hardware writable.")
+      error_count += 1
+    if component.hw_read_options and not component.is_hardware_readable():
+      throw_error(f"{label} has hardware read options '{component.hw_read_options!r}' but is not hardware readable.")
+      error_count += 1
+    if HardwareWriteOptions.CONTINUOUS in component.hw_write_options and component.hw_write_options != HardwareWriteOptions.CONTINUOUS:
+      throw_error(f"{label} combines the continuous write option with other hardware write options '{component.hw_write_options!r}'.")
+      error_count += 1
+  for register in self.registers:
+    if register.fields:
+      for field in register.fields:
+        _validate_component_access_options(field, f"Field '{register.hierarchical_name}.{field.name}'")
+    else:
+      _validate_component_access_options(register, f"Register '{register.hierarchical_name}'")
+  return error_count
+
+
+
+def _validate_field_placements(self) -> int:
+  """Check the absence of overlapping or out-of-range fields in registers and array prototypes."""
+  error_count = 0
+  def _validate_register_field_placements(register) -> int:
+    nonlocal error_count
+    previous_end = 0
+    for field in register.fields:  # Fields are sorted by offset during elaboration
+      if field.offset < previous_end:
+        throw_error(f"Field '{register.hierarchical_name}.{field.name}' overlaps with a previous field.")
+        error_count += 1
+      if field.offset + field.width > register.width:
+        throw_error(f"Field '{register.hierarchical_name}.{field.name}' extends beyond the {register.width}-bit register width.")
+        error_count += 1
+      previous_end = field.offset + field.width
+  for register in self.registers:
+    if not register.is_array_element:
+      _validate_register_field_placements(register)
+  for prototype in self.get_array_prototype_registers():
+    _validate_register_field_placements(prototype)
+  return error_count
+
+
+
 def validate(self) -> int:
   """Validate the data structure after elaboration and before generation, optional but highly recommended."""
   error_count  = 0
@@ -116,4 +171,6 @@ def validate(self) -> int:
   error_count += _validate_address_conflicts(self)
   error_count += _validate_address_alignments(self)
   error_count += _validate_reset_access_behaviors(self)
+  error_count += _validate_access_options(self)
+  error_count += _validate_field_placements(self)
   return error_count
