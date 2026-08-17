@@ -176,28 +176,28 @@ def _elaborate_hierarchical_names(container, parent_prefix):
 
 
 
+def _resolve_field_offsets(register):
+  """Compute offsets of the fields of a register and sort them by offset."""
+  if register.fields:
+    running_offset = 0
+    for field in register.fields:
+      if field.align is not None:
+        running_offset = ceil(running_offset / field.align) * field.align
+      if field.offset is None:
+        field.offset = running_offset
+      else:
+        running_offset = field.offset
+      running_offset += field.width
+    register.fields.sort(key=lambda field: field.offset)
+
+
+
 def _elaborate_field_offsets(container):
-  """Compute offsets of register fields."""
+  """Compute offsets of register fields for regular registers and array prototypes."""
   for register in container.registers:
-      if register.fields:
-        running_offset = 0
-        for field in register.fields:
-          if field.align is not None:
-            running_offset = ceil(running_offset / field.align) * field.align
-          if field.offset is None:
-            field.offset = running_offset
-          else:
-            running_offset = field.offset
-          running_offset += field.width
-
-
-
-def _cleanup_access_options(component):
-  """Disable irrelevant hardware read/write options on a component."""
-  if not component.is_hardware_readable():
-    component.hw_read_options = HardwareReadOptions(0)
-  if not component.is_hardware_writable():
-    component.hw_write_options = HardwareWriteOptions(0)
+    _resolve_field_offsets(register)
+  for prototype in container.get_array_prototype_registers():
+    _resolve_field_offsets(prototype)
 
 
 
@@ -259,76 +259,47 @@ def _elaborate_sw_read_side_effects(bank):
 
 
 
-def _elaborate_access_policies(container):
-  """Compute software and hardware access policies for registers and fields."""
-  for register in container.registers:
+def _elaborate_sw_write_once(bank):
+  """Flag write-once software access to gate the dedicated RTL and testbench sections."""
+  for register in bank.registers:
     if register.fields:
       for field in register.fields:
-        field.software_access   = field.software_access   or register.software_access   or field_default_software_access
-        field.hardware_access   = field.hardware_access   or register.hardware_access   or field_default_hardware_access
-        field.hw_write_options  = field.hw_write_options  or register.hw_write_options  or field_default_hw_write_options
-        field.hw_read_options   = field.hw_read_options   or register.hw_read_options   or field_default_hw_read_options
-        field.sw_write_behavior = field.sw_write_behavior or register.sw_write_behavior or field_default_sw_write_behavior
-        field.sw_read_behavior  = field.sw_read_behavior  or register.sw_read_behavior  or field_default_sw_read_behavior
-        _cleanup_access_options(field)
-    register.software_access   = register.software_access   or register_default_software_access
-    register.hardware_access   = register.hardware_access   or register_default_hardware_access
-    register.hw_write_options  = register.hw_write_options  or register_default_hw_write_options
-    register.hw_read_options   = register.hw_read_options   or register_default_hw_read_options
-    register.sw_write_behavior = register.sw_write_behavior or register_default_sw_write_behavior
-    register.sw_read_behavior  = register.sw_read_behavior  or register_default_sw_read_behavior
-    _cleanup_access_options(register)
-    if register.fields:
-      _upgrade_register_access_from_fields(register)
-  _elaborate_array_prototype_access(container)
+        if field.is_software_write_once():
+          bank.has_sw_write_once = True
+          return
+    elif register.is_software_write_once():
+      bank.has_sw_write_once = True
+      return
 
 
 
-def _elaborate_array_prototype_access(container):
-  """Resolve access policies on register prototypes inside ComponentArray wrappers."""
-  for component in container.components:
-    if isinstance(component, ComponentArray):
-      prototype = component.prototype
-      if isinstance(prototype, Register):
-        prototype.software_access   = prototype.software_access   or register_default_software_access
-        prototype.hardware_access   = prototype.hardware_access   or register_default_hardware_access
-        prototype.hw_write_options  = prototype.hw_write_options  or register_default_hw_write_options
-        prototype.hw_read_options   = prototype.hw_read_options   or register_default_hw_read_options
-        prototype.sw_write_behavior = prototype.sw_write_behavior or register_default_sw_write_behavior
-        prototype.sw_read_behavior  = prototype.sw_read_behavior  or register_default_sw_read_behavior
-        if prototype.fields:
-          for field in prototype.fields:
-            field.software_access   = field.software_access   or prototype.software_access   or field_default_software_access
-            field.hardware_access   = field.hardware_access   or prototype.hardware_access   or field_default_hardware_access
-            field.hw_write_options  = field.hw_write_options  or prototype.hw_write_options  or field_default_hw_write_options
-            field.hw_read_options   = field.hw_read_options   or prototype.hw_read_options   or field_default_hw_read_options
-            field.sw_write_behavior = field.sw_write_behavior or prototype.sw_write_behavior or field_default_sw_write_behavior
-            field.sw_read_behavior  = field.sw_read_behavior  or prototype.sw_read_behavior  or field_default_sw_read_behavior
-            _cleanup_access_options(field)
-          _upgrade_register_access_from_fields(prototype)
-        _cleanup_access_options(prototype)
-      elif isinstance(prototype, RegisterFile):
-        _elaborate_array_prototype_access(prototype)
-    elif isinstance(component, Register):
-      component.software_access   = component.software_access   or register_default_software_access
-      component.hardware_access   = component.hardware_access   or register_default_hardware_access
-      component.hw_write_options  = component.hw_write_options  or register_default_hw_write_options
-      component.hw_read_options   = component.hw_read_options   or register_default_hw_read_options
-      component.sw_write_behavior = component.sw_write_behavior or register_default_sw_write_behavior
-      component.sw_read_behavior  = component.sw_read_behavior  or register_default_sw_read_behavior
-      if component.fields:
-        for field in component.fields:
-          field.software_access   = field.software_access   or component.software_access   or field_default_software_access
-          field.hardware_access   = field.hardware_access   or component.hardware_access   or field_default_hardware_access
-          field.hw_write_options  = field.hw_write_options  or component.hw_write_options  or field_default_hw_write_options
-          field.hw_read_options   = field.hw_read_options   or component.hw_read_options   or field_default_hw_read_options
-          field.sw_write_behavior = field.sw_write_behavior or component.sw_write_behavior or field_default_sw_write_behavior
-          field.sw_read_behavior  = field.sw_read_behavior  or component.sw_read_behavior  or field_default_sw_read_behavior
-          _cleanup_access_options(field)
-        _upgrade_register_access_from_fields(component)
-      _cleanup_access_options(component)
-    elif isinstance(component, RegisterFile):
-      _elaborate_array_prototype_access(component)
+def _resolve_register_access(register):
+  """Resolve software and hardware access policies and options for a register and its fields."""
+  if register.fields:
+    for field in register.fields:
+      field.software_access   = field.software_access   or register.software_access   or field_default_software_access
+      field.hardware_access   = field.hardware_access   or register.hardware_access   or field_default_hardware_access
+      field.hw_write_options  = field.hw_write_options  or register.hw_write_options  or (field_default_hw_write_options if field.is_hardware_writable() else HardwareWriteOptions(0))
+      field.hw_read_options   = field.hw_read_options   or register.hw_read_options   or (field_default_hw_read_options  if field.is_hardware_readable()  else HardwareReadOptions(0))
+      field.sw_write_behavior = field.sw_write_behavior or register.sw_write_behavior or field_default_sw_write_behavior
+      field.sw_read_behavior  = field.sw_read_behavior  or register.sw_read_behavior  or field_default_sw_read_behavior
+  register.software_access   = register.software_access   or register_default_software_access
+  register.hardware_access   = register.hardware_access   or register_default_hardware_access
+  if register.fields:
+    _upgrade_register_access_from_fields(register)
+  register.hw_write_options  = register.hw_write_options  or (register_default_hw_write_options if register.is_hardware_writable() else HardwareWriteOptions(0))
+  register.hw_read_options   = register.hw_read_options   or (register_default_hw_read_options  if register.is_hardware_readable()  else HardwareReadOptions(0))
+  register.sw_write_behavior = register.sw_write_behavior or register_default_sw_write_behavior
+  register.sw_read_behavior  = register.sw_read_behavior  or register_default_sw_read_behavior
+
+
+
+def _elaborate_access_policies(container):
+  """Compute software and hardware access policies for registers, fields, and array prototypes."""
+  for register in container.registers:
+    _resolve_register_access(register)
+  for prototype in container.get_array_prototype_registers():
+    _resolve_register_access(prototype)
 
 
 
@@ -337,17 +308,21 @@ def _upgrade_register_access_from_fields(register):
   for field in register.fields:
     if field.is_software_writable():
       register.software_access = {
-        SoftwareAccessType.NONE       : SoftwareAccessType.WRITE_ONLY,
-        SoftwareAccessType.READ_ONLY  : SoftwareAccessType.READ_WRITE,
-        SoftwareAccessType.WRITE_ONLY : SoftwareAccessType.WRITE_ONLY,
-        SoftwareAccessType.READ_WRITE : SoftwareAccessType.READ_WRITE,
+        SoftwareAccessType.NONE            : SoftwareAccessType.WRITE_ONLY,
+        SoftwareAccessType.READ_ONLY       : SoftwareAccessType.READ_WRITE,
+        SoftwareAccessType.WRITE_ONLY      : SoftwareAccessType.WRITE_ONLY,
+        SoftwareAccessType.READ_WRITE      : SoftwareAccessType.READ_WRITE,
+        SoftwareAccessType.WRITE_ONCE      : SoftwareAccessType.WRITE_ONCE,
+        SoftwareAccessType.READ_WRITE_ONCE : SoftwareAccessType.READ_WRITE_ONCE,
       }[register.software_access]
     if field.is_software_readable():
       register.software_access = {
-        SoftwareAccessType.NONE       : SoftwareAccessType.READ_ONLY,
-        SoftwareAccessType.READ_ONLY  : SoftwareAccessType.READ_ONLY,
-        SoftwareAccessType.WRITE_ONLY : SoftwareAccessType.READ_WRITE,
-        SoftwareAccessType.READ_WRITE : SoftwareAccessType.READ_WRITE,
+        SoftwareAccessType.NONE            : SoftwareAccessType.READ_ONLY,
+        SoftwareAccessType.READ_ONLY       : SoftwareAccessType.READ_ONLY,
+        SoftwareAccessType.WRITE_ONLY      : SoftwareAccessType.READ_WRITE,
+        SoftwareAccessType.READ_WRITE      : SoftwareAccessType.READ_WRITE,
+        SoftwareAccessType.WRITE_ONCE      : SoftwareAccessType.READ_WRITE_ONCE,
+        SoftwareAccessType.READ_WRITE_ONCE : SoftwareAccessType.READ_WRITE_ONCE,
       }[register.software_access]
     if field.is_hardware_writable():
       register.hardware_access = {
@@ -439,16 +414,24 @@ def _elaborate_component_padding(container, container_address):
 
 
 
+def _resolve_field_padding(register):
+  """Compute firmware struct padding for the software-visible fields of a register."""
+  if register.fields:
+    previous_offset = 0
+    for field in register.fields:
+      if field.is_software_readable() or field.is_software_writable():
+        field.sw_struct_padding = field.offset - previous_offset
+        previous_offset = field.offset + field.width
+    register.sw_struct_fields_padding = register.width - previous_offset
+
+
+
 def _elaborate_field_padding(bank):
-  """Compute firmware struct padding for software-visible fields."""
+  """Compute firmware struct padding for software-visible fields of regular registers and array prototypes."""
   for register in bank.registers:
-    if register.fields:
-      previous_offset = 0
-      for field in register.fields:
-        if field.is_software_readable() or field.is_software_writable():
-          field.sw_struct_padding = field.offset - previous_offset
-          previous_offset = field.offset + field.width
-      register.sw_struct_fields_padding = 32 - previous_offset
+    _resolve_field_padding(register)
+  for prototype in bank.get_array_prototype_registers():
+    _resolve_field_padding(prototype)
 
 
 
@@ -485,6 +468,9 @@ def elaborate(self):
 
   # Flag software read side effect behaviors
   _elaborate_sw_read_side_effects(self)
+
+  # Flag write-once software access
+  _elaborate_sw_write_once(self)
 
   # Compute which register files are empty in the firmware struct
   _elaborate_sw_struct_accessibility(self)

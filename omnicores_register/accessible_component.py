@@ -45,13 +45,16 @@ class AccessibleComponent:
     self.sw_read_side_effect_init = None
 
   def is_software_readable(self) -> bool:
-    return self.software_access in [SoftwareAccessType.READ_ONLY, SoftwareAccessType.READ_WRITE]
+    return self.software_access in [SoftwareAccessType.READ_ONLY, SoftwareAccessType.READ_WRITE, SoftwareAccessType.READ_WRITE_ONCE]
 
   def is_software_writable(self) -> bool:
-    return self.software_access in [SoftwareAccessType.WRITE_ONLY, SoftwareAccessType.READ_WRITE]
+    return self.software_access in [SoftwareAccessType.WRITE_ONLY, SoftwareAccessType.READ_WRITE, SoftwareAccessType.WRITE_ONCE, SoftwareAccessType.READ_WRITE_ONCE]
 
   def is_software_accessible(self) -> bool:
     return self.is_software_readable() or self.is_software_writable()
+
+  def is_software_write_once(self) -> bool:
+    return self.software_access in [SoftwareAccessType.WRITE_ONCE, SoftwareAccessType.READ_WRITE_ONCE]
 
   def is_hardware_readable(self) -> bool:
     return self.hardware_access in [HardwareAccessType.READ_ONLY, HardwareAccessType.READ_WRITE]

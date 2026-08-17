@@ -72,11 +72,23 @@ class Register(AddressableComponent, AccessibleComponent):
   def add_field(self, field:Field):
     self.fields.append(field)
 
+  def has_sw_write_once_field(self) -> bool:
+    """Return True if any field has write-once software access."""
+    return any(field.is_software_write_once() for field in self.fields)
+
+  def get_normal_sw_write_fields(self):
+    """Return the fields that are software-writable without the write-once modifier."""
+    return [field for field in self.fields if field.is_software_writable() and not field.is_software_write_once()]
+
+  def get_software_readable_fields(self):
+    """Return the fields that are software-readable."""
+    return [field for field in self.fields if field.is_software_readable()]
+
   def _build_field_bit_map(self):
     """Pre-compute a list mapping each bit index to its owning field or None."""
     bit_map = [None] * self.width
     for field in self.fields:
-      for bit in range(field.offset, field.offset + field.width):
+      for bit in range(field.offset, min(field.offset + field.width, self.width)):
         bit_map[bit] = field
     return bit_map
 
